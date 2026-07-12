@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distribuidora - Control de Asistencias y Nómina</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
+.container{max-width:1500px;margin:0 auto;background:#fff;border-radius:15px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:25px 30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.header h1{font-size:22px}
+.header .userbox{text-align:right;font-size:13px}
+.logout-btn{background:#dc3545;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;margin-top:5px}
+.content{display:flex;min-height:600px}
+.sidebar{width:230px;background:#f8f9fa;padding:15px;border-right:1px solid #ddd;flex-shrink:0}
+.nav-item{padding:11px 14px;margin-bottom:8px;background:#fff;border:2px solid transparent;border-radius:8px;cursor:pointer;font-weight:500;color:#333;font-size:13px;transition:.2s}
+.nav-item:hover{border-color:#667eea}
+.nav-item.active{background:#667eea;color:#fff}
+.main{flex:1;padding:30px;overflow-x:auto}
+.screen{display:none}.screen.active{display:block}
+.screen h2{color:#667eea;margin-bottom:22px;font-size:21px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;margin-bottom:6px;font-weight:500;font-size:13px;color:#333}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px;border:2px solid #ddd;border-radius:7px;font-size:13px}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#667eea}
+.form-group select[multiple]{height:auto}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.hint{font-size:11px;color:#777;margin-top:-10px;margin-bottom:14px}
+.btn{padding:10px 22px;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px;transition:.2s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(102,126,234,.4)}
+.btn-success{background:#28a745;color:#fff}.btn-success:hover{background:#218838}
+.btn-danger{background:#dc3545;color:#fff}.btn-danger:hover{background:#c82333}
+.btn-warning{background:#ffc107;color:#333}.btn-warning:hover{background:#e0a800}
+.btn-info{background:#17a2b8;color:#fff}.btn-info:hover{background:#117a8b}
+.btn-small{padding:6px 12px;font-size:11px;margin-right:4px;margin-bottom:4px}
+.alert{padding:12px 15px;border-radius:7px;margin-bottom:16px;font-size:13px}
+.alert-success{background:#d4edda;color:#155724}
+.alert-error{background:#f8d7da;color:#721c24}
+.alert-warning{background:#fff3cd;color:#856404}
+.alert-info{background:#d1ecf1;color:#0c5460}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px}
+th{background:#f8f9fa;padding:9px;text-align:left;border-bottom:2px solid #ddd;font-weight:600;white-space:nowrap}
+td{padding:9px;border-bottom:1px solid #eee;white-space:nowrap}
+tr:hover{background:#f8f9fa}
+.badge{display:inline-block;padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600}
+.badge-GERENTE{background:#e7d4f5;color:#6f42c1}
+.badge-ADMINISTRADOR{background:#cfe2ff;color:#084298}
+.badge-CONTABILIDAD{background:#d1ecf1;color:#0c5460}
+.badge-AUXILIAR_REPARTO{background:#ffe5d0;color:#a15c00}
+.badge-TIENDA{background:#d4edda;color:#155724}
+.badge-CONDUCTOR{background:#d0e8ff;color:#004085}
+.badge-active{background:#d4edda;color:#155724}
+.badge-inactive{background:#f8d7da;color:#721c24}
+.badge-liquidacion{background:#f8d7da;color:#721c24}
+.card{background:#f8f9fa;padding:18px;border-radius:10px;border-left:4px solid #667eea}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:26px}
+.stat-card{background:#f8f9fa;padding:16px;border-radius:10px;border-left:4px solid #667eea;text-align:center}
+.stat-card h3{color:#667eea;font-size:11px;text-transform:uppercase;margin-bottom:8px}
+.stat-card .val{font-size:24px;font-weight:bold;color:#333}
+.stat-card.neg .val{color:#dc3545}
+.stat-card.pos .val{color:#28a745}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal.active{display:flex}
+.modal-content{background:#fff;padding:26px;border-radius:12px;max-width:500px;width:92%;max-height:88vh;overflow-y:auto}
+.modal-header{font-size:18px;font-weight:600;color:#667eea;margin-bottom:16px;display:flex;justify-content:space-between}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#999}
+.clock{font-size:40px;font-weight:bold;color:#667eea;font-family:monospace;text-align:center}
+.geo-box{background:#f8f9fa;padding:16px;border-radius:8px;margin:14px 0;font-size:13px}
+.geo-status{padding:8px 12px;border-radius:6px;font-weight:600;margin-top:8px;display:inline-block}
+.geo-ok{background:#d4edda;color:#155724}
+.geo-fail{background:#f8d7da;color:#721c24}
+.geo-wait{background:#fff3cd;color:#856404}
+.face-preview{width:100%;max-width:280px;border-radius:8px;background:#000;margin:10px auto;display:block}
+.tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid #eee;flex-wrap:wrap}
+.tab-btn{padding:9px 16px;background:none;border:none;cursor:pointer;font-weight:500;font-size:13px;border-bottom:3px solid transparent;color:#666}
+.tab-btn.active{color:#667eea;border-color:#667eea}
+.tab-content{display:none}.tab-content.active{display:block}
+.search-box input{padding:9px;border:2px solid #ddd;border-radius:7px;width:100%;max-width:280px;margin-bottom:14px}
+.payroll-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eee;font-size:13px}
+.payroll-row.total{font-weight:bold;font-size:15px;color:#667eea;border-top:2px solid #667eea;margin-top:6px}
+.payroll-row .neg{color:#dc3545}.payroll-row .pos{color:#28a745}
+.export-bar{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap}
+.filters-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.filters-row .form-group{max-width:260px}
+.info-banner{background:#e7f3ff;border-left:4px solid #667eea;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px}
+.table-scroll{overflow-x:auto}
+.password-wrap{position:relative}
+.password-wrap input{padding-right:70px!important}
+.toggle-pass-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:#e9ecef;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;color:#333}
+.toggle-pass-btn:hover{background:#dee2e6}
+@media(max-width:768px){
+.content{flex-direction:column}
+.sidebar{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid #ddd}
+.nav-item{white-space:nowrap;margin-right:8px;margin-bottom:0}
+.form-row{grid-template-columns:1fr}
+.main{padding:18px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🚚 Distribuidora — Control de Asistencias</h1>
+    <div class="userbox" id="headerUserBox" style="display:none">
+      <div id="headerUserName"></div>
+      <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sidebar" id="sidebar" style="display:none">
+      <div class="nav-item active" onclick="showScreen('dashboard')">📊 Dashboard</div>
+      <div class="nav-item" onclick="showScreen('checkin')">✅ Marcar Asistencia</div>
+      <div class="nav-item" onclick="showScreen('payroll')">💰 Mi Nómina</div>
+      <div class="nav-item" id="navMyLosses" style="display:none" onclick="showScreen('myLosses')">📦 Mis Productos Perdidos</div>
+      <div class="nav-item" id="navAdvances" style="display:none" onclick="showScreen('advances')">💵 Adelantos</div>
+      <div class="nav-item" id="navIncidents" style="display:none" onclick="showScreen('incidents')">📦 Incidencias</div>
+      <div class="nav-item" id="navDiscounts" style="display:none" onclick="showScreen('discounts')">🧾 Faltante de Liquidación</div>
+      <div class="nav-item" id="navUsers" style="display:none" onclick="showScreen('users')">👥 Usuarios</div>
+      <div class="nav-item" id="navPayrollAll" style="display:none" onclick="showScreen('payrollAll')">📈 Nómina General</div>
+      <div class="nav-item" id="navConfig" style="display:none" onclick="showScreen('config')">⚙️ Configuración</div>
+    </div>
+
+    <div class="main">
+
+      <!-- LOGIN -->
+      <div id="login" class="screen active">
+        <div style="max-width:380px;margin:40px auto;text-align:center">
+          <h2>Iniciar Sesión</h2>
+          <form onsubmit="event.preventDefault();login();return false;">
+            <div class="form-group" style="text-align:left"><label>Usuario</label><input id="loginUsername"></div>
+            <div class="form-group password-wrap" style="text-align:left">
+              <label>Contraseña</label>
+              <input type="password" id="loginPassword">
+              <button type="button" class="toggle-pass-btn" onclick="togglePasswordVisibility('loginPassword',this)">Ver</button>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%">Ingresar</button>
+          </form>
+          <p style="margin-top:16px;font-size:12px;color:#666;text-align:left">
+            <strong>Gerente:</strong> gerente / gerente123<br>
+            <strong>Administrador:</strong> admin / admin123<br>
+            <strong>Contabilidad:</strong> contable / contable123<br>
+            <strong>Auxiliar reparto:</strong> auxiliar / aux123<br>
+            <strong>Tienda:</strong> tienda / tienda123<br>
+            <strong>Conductor:</strong> conductor / conductor123
+          </p>
+          <p style="margin-top:10px;font-size:11px;color:#999;text-align:left">
+            ⚠️ Los usuarios de demo no tienen rostro registrado. El Gerente debe editarlos y capturar un rostro real antes de poder marcar asistencia.
+          </p>
+        </div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div id="dashboard" class="screen">
+        <h2>Dashboard</h2>
+        <div id="dashAlert"></div>
+        <div class="info-banner" id="dashLocationBanner"></div>
+        <div class="stats-grid" id="dashStats"></div>
+        <div class="card">
+          <h3 style="color:#333;margin-bottom:10px;font-size:15px">Últimos movimientos</h3>
+          <table><thead><tr><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Ubicación</th></tr></thead><tbody id="dashLatest"></tbody></table>
+        </div>
+      </div>
+
+      <!-- CHECK IN/OUT -->
+      <div id="checkin" class="screen">
+        <h2>Marcar Asistencia</h2>
+        <div id="checkinAlert"></div>
+        <div class="info-banner" id="checkinLocationBanner"></div>
+        <div class="clock" id="clock">00:00:00</div>
+        <div id="clockDate" style="text-align:center;color:#666;margin-bottom:10px"></div>
+
+        <div class="geo-box">
+          <strong>📍 Verificación de ubicación</strong>
+          <p style="margin-top:6px;color:#666">Se verifica automáticamente al entrar a esta pantalla. Si cambiaste de lugar, puedes volver a verificar.</p>
+          <button class="btn btn-primary btn-small" onclick="verifyLocation()">🔄 Volver a verificar ubicación</button>
+          <div id="geoResult"></div>
+        </div>
+
+        <div class="geo-box">
+          <strong>🙂 Verificación facial</strong>
+          <p style="margin-top:6px;color:#666">La cámara se activa automáticamente y se intenta verificar tu rostro. Si no se reconoce, puedes intentarlo de nuevo con el botón.</p>
+          <video id="faceVideo" class="face-preview" autoplay muted playsinline style="display:none"></video>
+          <div style="text-align:center">
+            <button class="btn btn-primary btn-small" onclick="startFace()">🔄 Reactivar cámara</button>
+            <button class="btn btn-success btn-small" id="verifyFaceBtn" onclick="verifyFaceReal()">Verificar rostro ahora</button>
+          </div>
+          <div id="faceResult"></div>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap">
+          <button class="btn btn-success" style="padding:14px 26px" onclick="checkIn()">✅ Marcar Entrada</button>
+          <button class="btn btn-danger" style="padding:14px 26px" onclick="checkOut()">🚪 Marcar Salida</button>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#333;margin-bottom:10px;font-size:15px">Registros de hoy</h3>
+          <table><thead><tr><th>Hora</th><th>Tipo</th><th>Ubicación</th></tr></thead><tbody id="todayRecords"></tbody></table>
+        </div>
+      </div>
+
+      <!-- MI NÓMINA -->
+      <div id="payroll" class="screen">
+        <h2>Mi Nómina</h2>
+        <div class="form-group" style="max-width:220px">
+          <label>Mes</label>
+          <input type="month" id="payrollMonth" onchange="renderMyPayroll()">
+        </div>
+        <div class="export-bar">
+          <button class="btn btn-info btn-small" onclick="exportMyPayslipPDF()">📄 Exportar PDF</button>
+          <button class="btn btn-success btn-small" onclick="exportMyPayslipExcel()">📊 Exportar Excel</button>
+        </div>
+        <div id="payrollDetail"></div>
+      </div>
+
+      <!-- MIS PRODUCTOS PERDIDOS (solo Auxiliar de Reparto) -->
+      <div id="myLosses" class="screen">
+        <h2>Mis Productos Perdidos</h2>
+        <p class="hint" style="margin-bottom:14px">Historial de incidencias de productos perdidos registradas a tu nombre. Si un producto se perdió entre varios trabajadores, el monto ya viene dividido en partes iguales. Estas afectan tu bono de cero pérdidas y generan un descuento en tu nómina.</p>
+        <table><thead><tr><th>Fecha</th><th>Zona</th><th>Descripción</th><th>N° Planilla</th><th>Monto (tu parte)</th></tr></thead>
+        <tbody id="myLossesTable"></tbody></table>
+      </div>
+
+      <!-- ADELANTOS (solo Gerente) -->
+      <div id="advances" class="screen">
+        <h2>Adelantos de Sueldo</h2>
+        <div id="advancesAlert"></div>
+        <div class="card" style="margin-bottom:20px;max-width:440px">
+          <h3 style="font-size:14px;color:#333;margin-bottom:10px">Registrar adelanto</h3>
+          <div class="form-group"><label>Trabajador</label><select id="advUser"></select></div>
+          <div class="form-row">
+            <div class="form-group"><label>Monto (S/.)</label><input type="number" id="advAmount" min="1" step="0.01"></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="advDate"></div>
+          </div>
+          <div class="form-group"><label>Motivo</label>
+            <select id="advReason"><option value="A cuenta">A cuenta</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="createAdvance()">Registrar adelanto</button>
+        </div>
+        <div class="form-group" style="max-width:280px">
+          <label>Filtrar por trabajador</label>
+          <select id="advFilterUser" onchange="renderAdvances()"><option value="">Todos</option></select>
+        </div>
+        <table><thead><tr><th>Trabajador</th><th>Fecha</th><th>Monto</th><th>Motivo</th><th>Acción</th></tr></thead>
+        <tbody id="advancesTable"></tbody></table>
+      </div>
+
+      <!-- INCIDENCIAS (productos perdidos) -->
+      <div id="incidents" class="screen">
+        <h2>Incidencias — Productos Perdidos</h2>
+        <div id="incidentsAlert"></div>
+        <div class="card" style="margin-bottom:20px;max-width:460px">
+          <h3 style="font-size:14px;color:#333;margin-bottom:10px">Registrar incidencia</h3>
+          <div class="form-group"><label>Trabajador(es) responsables (Auxiliar de reparto / Administrador)</label>
+            <select id="incUser" multiple size="4"></select>
+          </div>
+          <p class="hint" style="margin-top:-10px">Mantén presionado Ctrl (⌘ en Mac) para seleccionar varios trabajadores. El monto se dividirá en partes iguales entre todos los seleccionados.</p>
+          <div class="form-group"><label>Zona donde se perdió</label>
+            <select id="incZone"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Fecha</label><input type="date" id="incDate"></div>
+            <div class="form-group"><label>Monto total S/.</label><input type="number" id="incAmount" min="0" step="0.01"></div>
+          </div>
+          <div class="form-group"><label>N° de planilla</label><input type="text" id="incPlanilla" placeholder="Ej: PL-00123"></div>
+          <div class="form-group"><label>Descripción</label><input type="text" id="incDesc" placeholder="Producto y detalle"></div>
+          <button class="btn btn-primary" onclick="createIncident()">Registrar</button>
+        </div>
+        <div class="filters-row">
+          <div class="form-group">
+            <label>Filtrar por trabajador</label>
+            <select id="incFilterUser" onchange="renderIncidents()"><option value="">Todos</option></select>
+          </div>
+          <div class="form-group">
+            <label>Filtrar por zona</label>
+            <select id="incFilterZone" onchange="renderIncidents()"><option value="">Todas</option></select>
+          </div>
+        </div>
+        <div class="card" style="max-width:320px;margin-bottom:10px">
+          <h3 style="font-size:12px;color:#667eea;text-transform:uppercase">Total incidencias (filtro actual)</h3>
+          <div style="font-size:26px;font-weight:bold;color:#333" id="incidentsTotal">S/. 0.00</div>
+        </div>
+        <table><thead><tr><th>Trabajador</th><th>Fecha</th><th>Zona</th><th>Descripción</th><th>N° Planilla</th><th>Monto</th><th>Acción</th></tr></thead>
+        <tbody id="incidentsTable"></tbody></table>
+      </div>
+
+      <!-- FALTANTE DE LIQUIDACIÓN (solo Conductor) -->
+      <div id="discounts" class="screen">
+        <h2>Faltante de Liquidación</h2>
+        <p class="hint" style="margin-bottom:14px">Descuento aplicable únicamente a Conductores por diferencias en la liquidación de efectivo/mercadería de su ruta.</p>
+        <div id="discountsAlert"></div>
+        <div class="card" style="margin-bottom:20px;max-width:460px">
+          <h3 style="font-size:14px;color:#333;margin-bottom:10px">Registrar faltante</h3>
+          <div class="form-group"><label>Conductor</label>
+            <select id="discUser"></select>
+          </div>
+          <div class="form-group"><label>Zona</label>
+            <select id="discZone"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Fecha</label><input type="date" id="discDate"></div>
+            <div class="form-group"><label>Monto S/.</label><input type="number" id="discAmount" min="0" step="0.01"></div>
+          </div>
+          <div class="form-group"><label>N° de planilla</label><input type="text" id="discPlanilla" placeholder="Ej: PL-00123"></div>
+          <button class="btn btn-primary" onclick="createDiscount()">Registrar faltante</button>
+        </div>
+        <div class="form-group" style="max-width:280px">
+          <label>Filtrar por conductor</label>
+          <select id="discFilterUser" onchange="renderDiscounts()"><option value="">Todos</option></select>
+        </div>
+        <table><thead><tr><th>Conductor</th><th>Fecha</th><th>Zona</th><th>N° Planilla</th><th>Monto</th><th>Acción</th></tr></thead>
+        <tbody id="discountsTable"></tbody></table>
+      </div>
+
+      <!-- USUARIOS (solo Gerente) -->
+      <div id="users" class="screen">
+        <h2>Gestión de Usuarios</h2>
+        <div id="usersAlert"></div>
+        <button class="btn btn-primary" style="margin-bottom:16px" onclick="openUserModal()">➕ Crear Usuario</button>
+        <div class="search-box"><input id="searchUsers" placeholder="Buscar..." onkeyup="filterUsers()"></div>
+        <div class="table-scroll">
+        <table><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Ubicación</th><th>Horario</th><th>Sueldo Base</th><th>AFP</th><th>Rostro</th><th>Estado</th><th>Acción</th></tr></thead>
+        <tbody id="usersTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- NÓMINA GENERAL (solo Gerente) -->
+      <div id="payrollAll" class="screen">
+        <h2>Nómina General</h2>
+        <div class="form-group" style="max-width:220px">
+          <label>Mes</label>
+          <input type="month" id="payrollAllMonth" onchange="renderPayrollAll()">
+        </div>
+        <div class="export-bar">
+          <button class="btn btn-info btn-small" onclick="exportAllPayslipsPDF()">📄 Exportar todos a PDF</button>
+          <button class="btn btn-success btn-small" onclick="exportAllPayslipsExcel()">📊 Exportar todos a Excel</button>
+        </div>
+        <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Usuario</th><th>Rol</th><th>Sueldo Base</th>
+            <th>Pago H.Extra</th><th>Bono Asistencia</th><th>Bono Cero Pérdidas</th>
+            <th>Desc. Productos</th><th>Desc. Tardanza</th><th>Desc. Faltas</th><th>Desc. AFP</th>
+            <th>Desc. Liquidación</th><th>Adelantos</th>
+            <th>Total</th><th>Boleta</th>
+          </tr></thead>
+          <tbody id="payrollAllTable"></tbody>
+        </table>
+        </div>
+      </div>
+
+      <!-- CONFIGURACIÓN (solo Gerente) -->
+      <div id="config" class="screen">
+        <h2>Configuración del Sistema</h2>
+        <div id="configAlert"></div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchConfigTab(event,'tabEmpresa')">🏢 Empresa</button>
+          <button class="tab-btn" onclick="switchConfigTab(event,'tabLoc')">📍 Ubicaciones</button>
+          <button class="tab-btn" onclick="switchConfigTab(event,'tabZones')">🗺️ Zonas</button>
+          <button class="tab-btn" onclick="switchConfigTab(event,'tabSchedule')">🕐 Horarios por Rol</button>
+          <button class="tab-btn" onclick="switchConfigTab(event,'tabRates')">💰 Bonos y Descuentos</button>
+        </div>
+
+        <div id="tabEmpresa" class="tab-content active">
+          <p class="hint" style="margin-bottom:14px">Estos datos aparecen en el encabezado de las boletas de pago exportadas en PDF y Excel.</p>
+          <div class="form-group" style="max-width:400px"><label>Nombre de la empresa</label><input id="cfgCompanyName" placeholder="Ej: Distribuidora Los Andes S.A.C."></div>
+          <div class="form-group" style="max-width:180px"><label>Iniciales para el logo (2-4 letras)</label><input id="cfgCompanyLogo" maxlength="4" placeholder="Ej: DLA"></div>
+          <button class="btn btn-success" onclick="saveCompanyConfig()">Guardar datos de la empresa</button>
+        </div>
+
+        <div id="tabLoc" class="tab-content">
+          <table style="margin-bottom:20px">
+            <thead><tr><th>Nombre</th><th>Latitud</th><th>Longitud</th><th>Radio (m)</th><th>Acción</th></tr></thead>
+            <tbody id="locationsTable"></tbody>
+          </table>
+          <div class="card" style="max-width:460px">
+            <h3 id="locFormTitle" style="font-size:14px;color:#333;margin-bottom:10px">Agregar ubicación</h3>
+            <div class="form-group"><label>Nombre (Ej: Almacén Central, Tienda Norte)</label><input id="locName"></div>
+            <div class="form-row">
+              <div class="form-group"><label>Latitud</label><input type="number" step="0.000001" id="locLat"></div>
+              <div class="form-group"><label>Longitud</label><input type="number" step="0.000001" id="locLng"></div>
+            </div>
+            <div class="form-group" style="max-width:220px"><label>Radio permitido (metros)</label><input type="number" id="locRadius" min="10" value="150"></div>
+            <button class="btn btn-primary btn-small" onclick="useMyLocationForForm()">📌 Usar mi ubicación actual</button>
+            <div style="margin-top:14px;display:flex;gap:8px">
+              <button class="btn btn-success" style="flex:1" onclick="saveLocation()">💾 Guardar ubicación</button>
+              <button class="btn btn-danger" style="flex:1;display:none" id="locCancelBtn" onclick="cancelLocationEdit()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tabZones" class="tab-content">
+          <p class="hint" style="margin-bottom:14px">Registra una sola vez el nombre de cada zona de reparto/venta. Luego podrás seleccionarla desde una lista al registrar incidencias y faltantes.</p>
+          <table style="margin-bottom:20px">
+            <thead><tr><th>Nombre de zona</th><th>Acción</th></tr></thead>
+            <tbody id="zonesTable"></tbody>
+          </table>
+          <div class="card" style="max-width:400px">
+            <h3 id="zoneFormTitle" style="font-size:14px;color:#333;margin-bottom:10px">Agregar zona</h3>
+            <div class="form-group"><label>Nombre de la zona</label><input id="zoneName" placeholder="Ej: Zona Norte, Ruta 3"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-success" style="flex:1" onclick="saveZone()">💾 Guardar zona</button>
+              <button class="btn btn-danger" style="flex:1;display:none" id="zoneCancelBtn" onclick="cancelZoneEdit()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tabSchedule" class="tab-content">
+          <p class="hint" style="margin-bottom:14px">Define el horario base de cada rol. Las horas extra se cuentan a partir de la "Hora de salida" configurada aquí. Al crear/editar un trabajador puedes asignarle una hora de inicio personalizada.</p>
+          <div class="table-scroll">
+          <table>
+            <thead><tr><th>Rol</th><th>Hora inicio</th><th>Hora salida</th><th>Tolerancia (min)</th><th>Jornada estándar (min)</th><th>Refrigerio (min)</th></tr></thead>
+            <tbody id="scheduleTable"></tbody>
+          </table>
+          </div>
+          <button class="btn btn-success" style="margin-top:16px" onclick="saveSchedules()">Guardar horarios</button>
+        </div>
+
+        <div id="tabRates" class="tab-content">
+          <div class="form-row">
+            <div class="form-group"><label>Bono asistencia perfecta (S/.) — no aplica a Contabilidad</label><input type="number" id="cfgBonoAsistencia" step="0.01"></div>
+            <div class="form-group"><label>Bono cero pérdidas — solo Auxiliar de Reparto (S/.)</label><input type="number" id="cfgBonoCeroPerdidas" step="0.01"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Descuento por minuto de tardanza (S/.)</label><input type="number" id="cfgTarifaTardanza" step="0.01"></div>
+            <div class="form-group"><label>Descuento por falta injustificada (S/.)</label><input type="number" id="cfgMontoFalta" step="0.01"></div>
+          </div>
+          <div class="form-group" style="max-width:280px">
+            <label>Monto AFP (S/. — descuento fijo establecido)</label><input type="number" id="cfgAfpAmount" step="0.01">
+          </div>
+          <div class="card">
+            <strong>Fórmula de horas extra (fija, no editable)</strong>
+            <p class="hint" style="margin-top:8px;margin-bottom:0">
+              Valor por minuto extra = Sueldo base ÷ 30 ÷ 10 ÷ 60. Ese valor se multiplica por los minutos extra netos del trabajador (minutos trabajados después de su hora de salida, menos minutos de tardanza acumulados en el mes).
+            </p>
+          </div>
+          <button class="btn btn-success" style="margin-top:16px" onclick="saveRatesConfig()">Guardar configuración</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div id="userModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span id="userModalTitle">Crear Usuario</span><button class="modal-close" onclick="closeUserModal()">×</button></div>
+    <div id="userModalAlert"></div>
+    <form onsubmit="saveUser(event)">
+      <div class="form-group"><label>Usuario</label><input id="fUsername" required></div>
+      <div class="form-group password-wrap">
+        <label>Contraseña</label>
+        <input type="password" id="fPassword" placeholder="Dejar en blanco para no cambiar">
+        <button type="button" class="toggle-pass-btn" onclick="togglePasswordVisibility('fPassword',this)">Ver</button>
+      </div>
+      <div class="form-group"><label>Nombre completo</label><input id="fName" required></div>
+      <div class="form-group"><label>Rol</label>
+        <select id="fRole" required onchange="updateScheduleHint()">
+          <option value="">Selecciona...</option>
+          <option value="GERENTE">Gerente</option>
+          <option value="ADMINISTRADOR">Administrador</option>
+          <option value="CONTABILIDAD">Contabilidad</option>
+          <option value="AUXILIAR_REPARTO">Auxiliar de Reparto</option>
+          <option value="TIENDA">Tienda</option>
+          <option value="CONDUCTOR">Conductor</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Localización asignada</label>
+        <select id="fLocation"><option value="">Sin asignar</option></select>
+      </div>
+      <div class="form-group"><label>Sueldo base mensual (S/.)</label><input type="number" id="fSalary" step="0.01" min="0" required></div>
+      <div class="form-group"><label>Hora de inicio personalizada (opcional)</label><input type="time" id="fCustomStart"></div>
+      <div class="hint" id="scheduleHint">Selecciona un rol para ver su horario por defecto.</div>
+      <div class="form-group"><label><input type="checkbox" id="fAfpApplies" checked> Se le descuenta AFP</label></div>
+      <div class="form-group"><label><input type="checkbox" id="fActive" checked> Usuario activo</label></div>
+
+      <div class="geo-box">
+        <strong>🙂 Registro facial <span id="faceRequiredMark" style="color:#dc3545">(requerido)</span></strong>
+        <p style="margin-top:6px;color:#666">Captura el rostro del trabajador con la cámara. Se usará para validar su identidad cada vez que marque asistencia.</p>
+        <video id="regFaceVideo" class="face-preview" autoplay muted playsinline style="display:none"></video>
+        <div style="text-align:center">
+          <button class="btn btn-primary btn-small" type="button" onclick="startRegFace()">Activar cámara</button>
+          <button class="btn btn-success btn-small" type="button" onclick="captureRegFace()">Capturar rostro</button>
+        </div>
+        <div id="regFaceStatus"></div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-success" style="flex:1" type="submit">💾 Guardar</button>
+        <button class="btn btn-danger" style="flex:1" type="button" id="fDeleteBtn" onclick="deleteUser()">🗑️ Eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY='distribuidora_attendance_v7';
+let currentUser=null, editingUsername=null;
+let faceStream=null, faceConfirmed=false, faceAutoTried=false;
+let regFaceStream=null, pendingFaceDescriptor=null;
+let lastGeoOk=false, lastGeoLocationName='', editingLocationId=null, editingZoneId=null;
+let modelsLoaded=false, modelsLoading=false;
+
+const FACE_MODEL_URL='https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master';
+const FACE_MATCH_THRESHOLD=0.6;
+
+const ROLES={GERENTE:'Gerente',ADMINISTRADOR:'Administrador',CONTABILIDAD:'Contabilidad',AUXILIAR_REPARTO:'Auxiliar de Reparto',TIENDA:'Tienda',CONDUCTOR:'Conductor'};
+const ROLE_LIST=['GERENTE','ADMINISTRADOR','CONTABILIDAD','AUXILIAR_REPARTO','TIENDA','CONDUCTOR'];
+const CAN_MANAGE_USERS=['GERENTE'];
+const CAN_CONFIGURE=['GERENTE'];
+const CAN_VIEW_PAYROLL_ALL=['GERENTE'];
+const CAN_MANAGE_INCIDENTS=['GERENTE','ADMINISTRADOR'];
+const CAN_MANAGE_ADVANCES=['GERENTE'];
+const CAN_MANAGE_DISCOUNTS=['GERENTE','ADMINISTRADOR'];
+const CAN_VIEW_MY_LOSSES=['AUXILIAR_REPARTO'];
+const LIQUIDACION_ROLE='CONDUCTOR'; // Faltante de liquidación: exclusivo de Conductor
+
+function defaultSchedules(){
+  const base={workStartMinutes:480,exitMinutes:960,toleranceMinutes:10,standardWorkMinutes:480,breakMinutes:0};
+  return {
+    GERENTE:{...base},
+    ADMINISTRADOR:{...base},
+    CONTABILIDAD:{...base,breakMinutes:60},
+    AUXILIAR_REPARTO:{...base},
+    TIENDA:{...base},
+    CONDUCTOR:{...base}
+  };
+}
+
+function pad2(n){return String(n).padStart(2,'0');}
+
+function getData(){
+  const d=localStorage.getItem(STORAGE_KEY);
+  if(d){
+    const parsed=JSON.parse(d);
+    if(!parsed.config.schedules) parsed.config.schedules=defaultSchedules();
+    ROLE_LIST.forEach(r=>{
+      if(!parsed.config.schedules[r]) parsed.config.schedules[r]={workStartMinutes:480,exitMinutes:960,toleranceMinutes:10,standardWorkMinutes:480,breakMinutes:0};
+      if(parsed.config.schedules[r].exitMinutes===undefined){
+        parsed.config.schedules[r].exitMinutes=parsed.config.schedules[r].workStartMinutes+parsed.config.schedules[r].standardWorkMinutes;
+      }
+    });
+    if(!parsed.config.locations) parsed.config.locations=[];
+    if(!parsed.config.zones) parsed.config.zones=[];
+    if(parsed.config.afpAmount===undefined) parsed.config.afpAmount=150;
+    if(!parsed.config.companyName) parsed.config.companyName='Mi Distribuidora S.A.C.';
+    if(!parsed.config.companyLogoText) parsed.config.companyLogoText='MD';
+    if(!parsed.otherDiscounts) parsed.otherDiscounts=[];
+    return parsed;
+  }
+  return {
+    config:{
+      companyName:'Mi Distribuidora S.A.C.',
+      companyLogoText:'MD',
+      locations:[],
+      zones:[],
+      schedules:defaultSchedules(),
+      bonoAsistenciaPerfecta:50,bonoCeroPerdidas:30,tarifaTardanzaPorMinuto:0.5,
+      montoFaltaInjustificada:30,afpAmount:150
+    },
+    users:{},attendance:[],incidents:[],advances:[],otherDiscounts:[]
+  };
+}
+function saveData(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}
+
+function initData(){
+  const d=getData();
+  if(Object.keys(d.users).length===0){
+    d.users={
+      gerente:{username:'gerente',password:'gerente123',name:'Gerente General',role:'GERENTE',active:true,baseSalary:5000,customWorkStart:'',assignedLocationId:'',afpApplies:true,faceDescriptor:null,createdAt:new Date().toISOString()},
+      admin:{username:'admin',password:'admin123',name:'Administrador Operativo',role:'ADMINISTRADOR',active:true,baseSalary:3500,customWorkStart:'',assignedLocationId:'',afpApplies:true,faceDescriptor:null,createdAt:new Date().toISOString()},
+      contable:{username:'contable',password:'contable123',name:'Ana Contreras',role:'CONTABILIDAD',active:true,baseSalary:2200,customWorkStart:'',assignedLocationId:'',afpApplies:true,faceDescriptor:null,createdAt:new Date().toISOString()},
+      auxiliar:{username:'auxiliar',password:'aux123',name:'Luis Ramírez',role:'AUXILIAR_REPARTO',active:true,baseSalary:1500,customWorkStart:'',assignedLocationId:'',afpApplies:true,faceDescriptor:null,createdAt:new Date().toISOString()},
+      tienda:{username:'tienda',password:'tienda123',name:'Rosa Medina',role:'TIENDA',active:true,baseSalary:1400,customWorkStart:'',assignedLocationId:'',afpApplies:true,faceDescriptor:null,createdAt:new Date().toISOString()},
+      conductor:{username:'conductor',password:'conductor123',name:'Pedro Salazar',role:'CONDUCTOR',active:true,baseSalary:1600,customWorkStart:'',assignedLocationId:'',afpApplies:true,faceDescriptor:null,createdAt:new Date().toISOString()}
+    };
+    saveData(d);
+  }
+  if(d.config.locations.length===0){
+    d.config.locations.push({id:'loc_'+Date.now(),name:'Almacén Central (ejemplo)',lat:-12.0464,lng:-77.0428,radius:150});
+    saveData(d);
+  }
+  if(d.config.zones.length===0){
+    d.config.zones.push({id:'zone_'+Date.now(),name:'Zona Norte (ejemplo)'});
+    saveData(d);
+  }
+}
+
+/* ---------- MOSTRAR / OCULTAR CONTRASEÑA ---------- */
+function togglePasswordVisibility(inputId,btn){
+  const input=document.getElementById(inputId);
+  if(input.type==='password'){ input.type='text'; btn.textContent='Ocultar'; }
+  else{ input.type='password'; btn.textContent='Ver'; }
+}
+
+/* ---------- AUTH ---------- */
+function login(){
+  const u=document.getElementById('loginUsername').value.trim();
+  const p=document.getElementById('loginPassword').value;
+  if(!u||!p){alert('Completa usuario y contraseña');return;}
+  const data=getData();
+  const user=data.users[u];
+  if(user&&user.password===p&&user.active){
+    currentUser=user;
+    document.getElementById('headerUserBox').style.display='block';
+    document.getElementById('headerUserName').innerHTML=`<strong>${user.name}</strong><br><span class="badge badge-${user.role}">${ROLES[user.role]}</span>`;
+    document.getElementById('sidebar').style.display='block';
+    setupMenuByRole();
+    showScreen('dashboard');
+  }else{
+    alert('Usuario, contraseña incorrectos o cuenta inactiva');
+  }
+}
+function logout(){
+  currentUser=null;stopFace();stopRegFace();
+  document.getElementById('headerUserBox').style.display='none';
+  document.getElementById('sidebar').style.display='none';
+  document.getElementById('loginUsername').value='';
+  document.getElementById('loginPassword').value='';
+  showScreen('login');
+}
+function setupMenuByRole(){
+  document.getElementById('navUsers').style.display=CAN_MANAGE_USERS.includes(currentUser.role)?'block':'none';
+  document.getElementById('navConfig').style.display=CAN_CONFIGURE.includes(currentUser.role)?'block':'none';
+  document.getElementById('navPayrollAll').style.display=CAN_VIEW_PAYROLL_ALL.includes(currentUser.role)?'block':'none';
+  document.getElementById('navIncidents').style.display=CAN_MANAGE_INCIDENTS.includes(currentUser.role)?'block':'none';
+  document.getElementById('navAdvances').style.display=CAN_MANAGE_ADVANCES.includes(currentUser.role)?'block':'none';
+  document.getElementById('navDiscounts').style.display=CAN_MANAGE_DISCOUNTS.includes(currentUser.role)?'block':'none';
+  document.getElementById('navMyLosses').style.display=CAN_VIEW_MY_LOSSES.includes(currentUser.role)?'block':'none';
+}
+
+/* ---------- NAV ---------- */
+function showScreen(id){
+  if(id!=='checkin') stopFace();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id!=='login'){
+    document.querySelectorAll('.nav-item').forEach(it=>{ if(it.getAttribute('onclick')===`showScreen('${id}')`) it.classList.add('active'); });
+  }
+  if(id==='dashboard')renderDashboard();
+  if(id==='checkin')renderCheckin();
+  if(id==='payroll'){ if(!document.getElementById('payrollMonth').value) document.getElementById('payrollMonth').value=new Date().toISOString().substring(0,7); renderMyPayroll(); }
+  if(id==='myLosses')renderMyLosses();
+  if(id==='advances')renderAdvances();
+  if(id==='incidents')renderIncidents();
+  if(id==='discounts')renderDiscounts();
+  if(id==='users')renderUsers();
+  if(id==='payrollAll'){ if(!document.getElementById('payrollAllMonth').value) document.getElementById('payrollAllMonth').value=new Date().toISOString().substring(0,7); renderPayrollAll(); }
+  if(id==='config')renderConfig();
+}
+
+/* ---------- HELPERS ---------- */
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000,toRad=x=>x*Math.PI/180;
+  const dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmtMoney(n){return 'S/. '+(Math.round(n*100)/100).toFixed(2);}
+function round2(n){return Math.round(n*100)/100;}
+function fmtMinutes(m){const h=Math.floor(Math.abs(m)/60),mm=Math.round(Math.abs(m)%60);return (m<0?'-':'')+h+'h '+mm+'m';}
+function minutesFromTimeStr(t){const [h,m]=t.split(':').map(Number);return h*60+m;}
+function timeStrFromMinutes(mins){return `${pad2(Math.floor(mins/60))}:${pad2(mins%60)}`;}
+function isSunday(dateStr){return new Date(dateStr+'T00:00:00').getDay()===0;}
+function getEffectiveSchedule(user){
+  const data=getData();
+  const sched=data.config.schedules[user.role]||{workStartMinutes:480,exitMinutes:960,toleranceMinutes:10,standardWorkMinutes:480,breakMinutes:0};
+  const workStartMinutes=(user.customWorkStart&&user.customWorkStart!=='')?minutesFromTimeStr(user.customWorkStart):sched.workStartMinutes;
+  return {workStartMinutes,exitMinutes:sched.exitMinutes,toleranceMinutes:sched.toleranceMinutes,standardWorkMinutes:sched.standardWorkMinutes,breakMinutes:sched.breakMinutes};
+}
+function locationName(id){
+  if(!id)return '—';
+  const data=getData();
+  const loc=data.config.locations.find(l=>l.id===id);
+  return loc?loc.name:'—';
+}
+function zoneName(id){
+  if(!id)return '—';
+  const data=getData();
+  const z=data.config.zones.find(z=>z.id===id);
+  return z?z.name:'—';
+}
+
+/* ---------- CLOCK ---------- */
+function tickClock(){
+  const now=new Date();
+  const c=document.getElementById('clock'); if(c) c.textContent=now.toLocaleTimeString('es-ES');
+  const cd=document.getElementById('clockDate'); if(cd) cd.textContent=now.toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+setInterval(tickClock,1000);
+
+/* ---------- RECONOCIMIENTO FACIAL (face-api.js) ---------- */
+async function ensureFaceModels(){
+  if(modelsLoaded) return true;
+  if(typeof faceapi==='undefined') return false;
+  if(modelsLoading){
+    while(modelsLoading){ await new Promise(r=>setTimeout(r,200)); }
+    return modelsLoaded;
+  }
+  modelsLoading=true;
+  try{
+    await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL+'/tiny_face_detector');
+    await faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL+'/face_landmark_68');
+    await faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL+'/face_recognition');
+    modelsLoaded=true;
+  }catch(e){
+    console.error('Error cargando modelos de reconocimiento facial',e);
+    modelsLoaded=false;
+  }
+  modelsLoading=false;
+  return modelsLoaded;
+}
+async function getFaceDescriptorFromVideo(videoEl){
+  try{
+    const ok=await ensureFaceModels();
+    if(!ok) return {error:'No se pudo cargar el motor de reconocimiento facial. Verifica tu conexión a internet e inténtalo de nuevo.'};
+    if(!videoEl||videoEl.readyState<2) return {error:'La cámara aún no está lista. Espera un segundo e inténtalo de nuevo.'};
+    const options=new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:0.5});
+    const detection=await faceapi.detectSingleFace(videoEl,options).withFaceLandmarks().withFaceDescriptor();
+    if(!detection) return {error:'No se detectó ningún rostro. Acércate a la cámara, mira de frente y asegúrate de tener buena iluminación.'};
+    return {descriptor:Array.from(detection.descriptor)};
+  }catch(e){
+    console.error('Error en verificación facial',e);
+    return {error:'Ocurrió un error al analizar el rostro. Inténtalo de nuevo.'};
+  }
+}
+function startRegFace(){
+  const video=document.getElementById('regFaceVideo');
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
+      regFaceStream=stream;video.srcObject=stream;video.style.display='block';
+    }).catch(()=>{
+      document.getElementById('regFaceStatus').innerHTML='<div class="alert alert-warning">No se pudo acceder a la cámara.</div>';
+    });
+  }else{
+    document.getElementById('regFaceStatus').innerHTML='<div class="alert alert-warning">Cámara no disponible en este navegador/dispositivo.</div>';
+  }
+}
+function stopRegFace(){
+  if(regFaceStream){regFaceStream.getTracks().forEach(t=>t.stop());regFaceStream=null;}
+  const v=document.getElementById('regFaceVideo'); if(v){v.style.display='none';v.srcObject=null;}
+}
+async function captureRegFace(){
+  const video=document.getElementById('regFaceVideo');
+  document.getElementById('regFaceStatus').innerHTML='<div class="geo-status geo-wait">⏳ Analizando rostro…</div>';
+  const res=await getFaceDescriptorFromVideo(video);
+  if(res.error){
+    document.getElementById('regFaceStatus').innerHTML=`<div class="geo-status geo-fail">❌ ${res.error}</div>`;
+    return;
+  }
+  pendingFaceDescriptor=res.descriptor;
+  document.getElementById('regFaceStatus').innerHTML='<div class="geo-status geo-ok">✅ Rostro capturado correctamente</div>';
+}
+
+/* Verificación facial en pantalla de asistencia (con auto-inicio) */
+function startFace(){
+  const video=document.getElementById('faceVideo');
+  faceAutoTried=false;
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
+      faceStream=stream;video.srcObject=stream;video.style.display='block';
+      video.onloadeddata=()=>{
+        if(!faceAutoTried){
+          faceAutoTried=true;
+          setTimeout(()=>{ if(!faceConfirmed) verifyFaceReal(); },900);
+        }
+      };
+    }).catch(()=>{
+      document.getElementById('faceResult').innerHTML='<div class="alert alert-warning">No se pudo acceder a la cámara. Puedes verificar con el botón "Reactivar cámara".</div>';
+    });
+  }else{
+    document.getElementById('faceResult').innerHTML='<div class="alert alert-warning">Cámara no disponible en este navegador/dispositivo.</div>';
+  }
+}
+function stopFace(){
+  if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}
+  const v=document.getElementById('faceVideo'); if(v){v.style.display='none';v.srcObject=null;v.onloadeddata=null;}
+  faceConfirmed=false;faceAutoTried=false;
+}
+async function verifyFaceReal(){
+  const btn=document.getElementById('verifyFaceBtn');
+  if(!currentUser.faceDescriptor){
+    document.getElementById('faceResult').innerHTML='<div class="geo-status geo-fail">❌ Tu usuario no tiene un rostro registrado. Pide al Gerente que lo registre en Usuarios.</div>';
+    return;
+  }
+  if(btn) btn.disabled=true;
+  const video=document.getElementById('faceVideo');
+  document.getElementById('faceResult').innerHTML='<div class="geo-status geo-wait">⏳ Analizando rostro…</div>';
+  const res=await getFaceDescriptorFromVideo(video);
+  if(btn) btn.disabled=false;
+  if(res.error){
+    faceConfirmed=false;
+    document.getElementById('faceResult').innerHTML=`<div class="geo-status geo-fail">❌ ${res.error}</div>`;
+    return;
+  }
+  const dist=faceapi.euclideanDistance(res.descriptor,currentUser.faceDescriptor);
+  if(dist<FACE_MATCH_THRESHOLD){
+    faceConfirmed=true;
+    document.getElementById('faceResult').innerHTML=`<div class="geo-status geo-ok">✅ Rostro verificado correctamente</div>`;
+  }else{
+    faceConfirmed=false;
+    document.getElementById('faceResult').innerHTML='<div class="geo-status geo-fail">❌ Rostro no reconocido. No es posible marcar asistencia. Intenta de nuevo con mejor iluminación y mirando de frente.</div>';
+  }
+}
+
+/* ---------- CHECK-IN SCREEN ---------- */
+function renderCheckin(){
+  faceConfirmed=false;lastGeoOk=false;lastGeoLocationName='';
+  document.getElementById('geoResult').innerHTML='';
+  document.getElementById('faceResult').innerHTML='';
+  const locName=locationName(currentUser.assignedLocationId);
+  document.getElementById('checkinLocationBanner').innerHTML=currentUser.assignedLocationId
+    ? `📍 Tu ubicación asignada para trabajar es: <strong>${locName}</strong>`
+    : `⚠️ No tienes una ubicación asignada. Puedes marcar desde cualquier ubicación autorizada, pero pide al Gerente que te asigne una para mayor claridad.`;
+  updateTodayRecords();
+  verifyLocation();
+  startFace();
+}
+function verifyLocation(){
+  const data=getData();
+  const locations=data.config.locations||[];
+  const resultBox=document.getElementById('geoResult');
+  if(locations.length===0){
+    resultBox.innerHTML='<div class="geo-status geo-fail">⚠️ Aún no hay ubicaciones configuradas. Pide al Gerente que agregue al menos una en Configuración → Ubicaciones.</div>';
+    return;
+  }
+  if(!navigator.geolocation){
+    resultBox.innerHTML='<div class="geo-status geo-fail">Este navegador no soporta geolocalización.</div>';
+    return;
+  }
+  resultBox.innerHTML='<div class="geo-status geo-wait">⏳ Obteniendo ubicación…</div>';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    let best=null;
+    locations.forEach(loc=>{
+      const dist=haversine(pos.coords.latitude,pos.coords.longitude,loc.lat,loc.lng);
+      if(!best||dist<best.dist) best={loc,dist};
+    });
+    if(best&&best.dist<=best.loc.radius){
+      lastGeoOk=true;lastGeoLocationName=best.loc.name;
+      resultBox.innerHTML=`<div class="geo-status geo-ok">✅ Dentro del rango de "${best.loc.name}" (${Math.round(best.dist)}m, precisión GPS ±${Math.round(pos.coords.accuracy)}m)</div>`;
+    }else{
+      lastGeoOk=false;lastGeoLocationName='';
+      const msg=best?`Ubicación más cercana: "${best.loc.name}" a ${Math.round(best.dist)}m (máx ${best.loc.radius}m permitido)`:'No hay ubicaciones cercanas.';
+      resultBox.innerHTML=`<div class="geo-status geo-fail">❌ Fuera de rango. ${msg}</div>`;
+    }
+  },err=>{
+    lastGeoOk=false;
+    let msg='No se pudo obtener tu ubicación.';
+    if(err.code===1) msg='Permiso de ubicación denegado. Actívalo en la configuración de tu navegador/dispositivo e inténtalo de nuevo.';
+    else if(err.code===2) msg='Ubicación no disponible en este momento. Verifica tu GPS o conexión e inténtalo de nuevo.';
+    else if(err.code===3) msg='Se agotó el tiempo de espera al obtener tu ubicación. Inténtalo de nuevo.';
+    msg+=' Nota: la geolocalización requiere una conexión HTTPS (o abrir el archivo en localhost).';
+    resultBox.innerHTML=`<div class="geo-status geo-fail">❌ ${msg}</div>`;
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+
+function checkIn(){ registerAttendance('in'); }
+function checkOut(){ registerAttendance('out'); }
+
+function registerAttendance(type){
+  if(!lastGeoOk){ showAlertOn('checkinAlert',`Primero verifica tu ubicación y asegúrate de estar dentro del rango de alguna ubicación autorizada para marcar tu ${type==='in'?'entrada':'salida'}`,'error'); return; }
+  if(!faceConfirmed){ showAlertOn('checkinAlert','Primero verifica tu rostro. Si no se reconoce tu rostro, no podrás marcar asistencia','error'); return; }
+
+  const data=getData();
+  const now=new Date();
+  const today=now.toISOString().split('T')[0];
+  const exists=data.attendance.some(l=>l.user===currentUser.username&&l.date===today&&l.type===type);
+  if(exists){ showAlertOn('checkinAlert',`Ya registraste ${type==='in'?'entrada':'salida'} hoy`,'warning'); return; }
+  if(type==='out'){
+    const hasIn=data.attendance.some(l=>l.user===currentUser.username&&l.date===today&&l.type==='in');
+    if(!hasIn){ showAlertOn('checkinAlert','Debes marcar entrada primero','error'); return; }
+  }
+  data.attendance.push({user:currentUser.username,date:today,time:now.toLocaleTimeString('es-ES'),type,timestamp:now.getTime(),location:lastGeoLocationName});
+  saveData(data);
+  showAlertOn('checkinAlert',`✅ ${type==='in'?'Entrada':'Salida'} registrada correctamente en "${lastGeoLocationName}"`,'success');
+  stopFace();lastGeoOk=false;lastGeoLocationName='';
+  document.getElementById('geoResult').innerHTML='';document.getElementById('faceResult').innerHTML='';
+  updateTodayRecords();
+  setTimeout(()=>{ verifyLocation(); startFace(); },1200);
+}
+function updateTodayRecords(){
+  const data=getData();
+  const today=new Date().toISOString().split('T')[0];
+  const logs=data.attendance.filter(l=>l.user===currentUser.username&&l.date===today).sort((a,b)=>a.timestamp-b.timestamp);
+  const t=document.getElementById('todayRecords');
+  t.innerHTML=logs.length?logs.map(l=>`<tr><td>${l.time}</td><td>${l.type==='in'?'➜ Entrada':'← Salida'}</td><td>${l.location||'—'}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:#999">Sin registros hoy</td></tr>';
+}
+function showAlertOn(id,msg,type){
+  const c=document.getElementById(id);
+  c.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(()=>c.innerHTML='',4500);
+}
+
+/* ---------- PAYROLL CALC ---------- */
+function calcPayroll(username,year,month){
+  const data=getData();
+  const cfg=data.config;
+  const user=data.users[username];
+  const sched=getEffectiveSchedule(user);
+  const monthStr=`${year}-${pad2(month)}`;
+  const logs=data.attendance.filter(l=>l.user===username&&l.date.startsWith(monthStr));
+  const byDate={};
+  logs.forEach(l=>{ (byDate[l.date]=byDate[l.date]||[]).push(l); });
+
+  let extraMinutes=0, tardinessMinutes=0, daysAttended=0;
+  Object.keys(byDate).forEach(date=>{
+    const dayLogs=byDate[date];
+    const inLog=dayLogs.find(l=>l.type==='in'), outLog=dayLogs.find(l=>l.type==='out');
+    if(inLog&&outLog){
+      daysAttended++;
+      const outDate=new Date(outLog.timestamp);
+      const checkoutMin=outDate.getHours()*60+outDate.getMinutes();
+      extraMinutes+=Math.max(0,checkoutMin-sched.exitMinutes);
+      const inDate=new Date(inLog.timestamp);
+      const checkinMin=inDate.getHours()*60+inDate.getMinutes();
+      tardinessMinutes+=Math.max(0,checkinMin-(sched.workStartMinutes+sched.toleranceMinutes));
+    }
+  });
+
+  const daysInMonth=new Date(year,month,0).getDate();
+  const now=new Date();
+  const isCurrentMonth=(now.getFullYear()===year&&now.getMonth()+1===month);
+  const lastDay=isCurrentMonth?now.getDate():daysInMonth;
+  let businessDays=0;
+  for(let d=1;d<=lastDay;d++){
+    const ds=`${monthStr}-${pad2(d)}`;
+    if(!isSunday(ds)) businessDays++;
+  }
+  const faltas=Math.max(0,businessDays-daysAttended);
+
+  const overtimeNetMinutes=Math.max(0,extraMinutes-tardinessMinutes);
+  const valorPorMinutoExtra=user.baseSalary/30/10/60;
+  const overtimePay=valorPorMinutoExtra*overtimeNetMinutes;
+
+  const lostProductsTotal=data.incidents.filter(i=>i.user===username&&i.date.startsWith(monthStr)).reduce((s,i)=>s+Number(i.amount),0);
+  const hasLossTracking=(user.role==='AUXILIAR_REPARTO'||user.role==='ADMINISTRADOR');
+  const isAuxiliarBonus=(user.role==='AUXILIAR_REPARTO');
+
+  // Contabilidad no recibe bono de asistencia perfecta
+  const bonoAsistenciaPerfecta=(user.role!=='CONTABILIDAD'&&faltas===0&&tardinessMinutes===0)?cfg.bonoAsistenciaPerfecta:0;
+  const bonoCeroPerdidas=(isAuxiliarBonus&&lostProductsTotal===0)?cfg.bonoCeroPerdidas:0;
+
+  const descuentoTardanza=tardinessMinutes*cfg.tarifaTardanzaPorMinuto;
+  const descuentoFaltas=faltas*cfg.montoFaltaInjustificada;
+  const descuentoAFP=(user.afpApplies===false)?0:cfg.afpAmount;
+
+  // Faltante de liquidación: exclusivo de Conductor
+  const liquidacionDescuentoTotal=(user.role===LIQUIDACION_ROLE)
+    ? data.otherDiscounts.filter(dd=>dd.user===username&&dd.date.startsWith(monthStr)).reduce((s,dd)=>s+Number(dd.amount),0)
+    : 0;
+  const advancesTotal=data.advances.filter(a=>a.user===username&&a.date.startsWith(monthStr)).reduce((s,a)=>s+Number(a.amount),0);
+
+  const totalDescuentos=descuentoTardanza+descuentoFaltas+(hasLossTracking?lostProductsTotal:0)+descuentoAFP+liquidacionDescuentoTotal+advancesTotal;
+  const totalBonos=bonoAsistenciaPerfecta+bonoCeroPerdidas+overtimePay;
+  const totalPagar=user.baseSalary+totalBonos-totalDescuentos;
+
+  return {user,baseSalary:user.baseSalary,extraMinutes,tardinessMinutes,overtimeNetMinutes,overtimePay,
+    faltas,businessDays,daysAttended,lostProductsTotal,hasLossTracking,isAuxiliarBonus,bonoAsistenciaPerfecta,bonoCeroPerdidas,
+    descuentoTardanza,descuentoFaltas,descuentoAFP,liquidacionDescuentoTotal,advancesTotal,totalBonos,totalDescuentos,totalPagar};
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(){
+  const data=getData();
+  const now=new Date();
+  const p=calcPayroll(currentUser.username,now.getFullYear(),now.getMonth()+1);
+  const today=now.toISOString().split('T')[0];
+  const todayLogs=data.attendance.filter(l=>l.user===currentUser.username&&l.date===today);
+  const status=todayLogs.some(l=>l.type==='in')?(todayLogs.some(l=>l.type==='out')?'Jornada completa':'Dentro'):'Fuera';
+
+  const locName=locationName(currentUser.assignedLocationId);
+  document.getElementById('dashLocationBanner').innerHTML=currentUser.assignedLocationId
+    ? `📍 Tu ubicación asignada para trabajar es: <strong>${locName}</strong>`
+    : `⚠️ Aún no tienes una ubicación asignada. Consulta con el Gerente.`;
+
+  let statsHtml=`
+    <div class="stat-card"><h3>Estado hoy</h3><div class="val">${status}</div></div>
+    <div class="stat-card"><h3>Asistencias mes</h3><div class="val">${p.daysAttended}/${p.businessDays}</div></div>
+    <div class="stat-card ${p.faltas>0?'neg':'pos'}"><h3>Faltas</h3><div class="val">${p.faltas}</div></div>
+    <div class="stat-card ${p.tardinessMinutes>0?'neg':'pos'}"><h3>Tardanza acumulada</h3><div class="val">${fmtMinutes(p.tardinessMinutes)}</div></div>
+    <div class="stat-card pos"><h3>H. Extra acumuladas</h3><div class="val">${fmtMinutes(p.overtimeNetMinutes)}</div></div>
+    <div class="stat-card pos"><h3>Total estimado a pagar</h3><div class="val">${fmtMoney(p.totalPagar)}</div></div>
+  `;
+  if(CAN_MANAGE_USERS.includes(currentUser.role)){
+    statsHtml+=`<div class="stat-card"><h3>Usuarios registrados</h3><div class="val">${Object.keys(data.users).length}</div></div>
+    <div class="stat-card"><h3>Ubicaciones activas</h3><div class="val">${data.config.locations.length}</div></div>`;
+  }
+  document.getElementById('dashStats').innerHTML=statsHtml;
+
+  const latest=data.attendance.filter(l=>l.user===currentUser.username).sort((a,b)=>b.timestamp-a.timestamp).slice(0,6);
+  document.getElementById('dashLatest').innerHTML=latest.length?latest.map(l=>`<tr><td>${new Date(l.timestamp).toLocaleDateString('es-ES')}</td><td>${l.time}</td><td>${l.type==='in'?'Entrada':'Salida'}</td><td>${l.location||'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#999">Sin registros</td></tr>';
+}
+
+/* ---------- MI NÓMINA ---------- */
+function renderMyPayroll(){
+  const val=document.getElementById('payrollMonth').value||new Date().toISOString().substring(0,7);
+  const [y,m]=val.split('-').map(Number);
+  const p=calcPayroll(currentUser.username,y,m);
+  document.getElementById('payrollDetail').innerHTML=payrollHtml(p);
+}
+function payrollHtml(p){
+  let rows=`
+    <div class="payroll-row"><span>Sueldo base</span><span>${fmtMoney(p.baseSalary)}</span></div>
+    <div class="payroll-row"><span>Días asistidos / hábiles</span><span>${p.daysAttended} / ${p.businessDays}</span></div>
+    <div class="payroll-row"><span>Faltas injustificadas</span><span>${p.faltas}</span></div>
+    <div class="payroll-row"><span>Minutos de tardanza acumulados (mes)</span><span>${fmtMinutes(p.tardinessMinutes)}</span></div>
+    <div class="payroll-row"><span>Minutos extra acumulados (después de hora de salida)</span><span>${fmtMinutes(p.extraMinutes)}</span></div>
+    <div class="payroll-row"><span>Horas extra netas (extra - tardanza)</span><span class="pos">+${fmtMoney(p.overtimePay)} (${fmtMinutes(p.overtimeNetMinutes)})</span></div>`;
+  if(p.user.role!=='CONTABILIDAD'){
+    rows+=`<div class="payroll-row"><span>Bono asistencia perfecta</span><span class="pos">+${fmtMoney(p.bonoAsistenciaPerfecta)}</span></div>`;
+  }
+  if(p.isAuxiliarBonus){
+    rows+=`<div class="payroll-row"><span>Bono cero pérdidas (productos)</span><span class="pos">+${fmtMoney(p.bonoCeroPerdidas)}</span></div>`;
+  }
+  if(p.hasLossTracking){
+    rows+=`<div class="payroll-row"><span>Descuento productos perdidos</span><span class="neg">-${fmtMoney(p.lostProductsTotal)}</span></div>`;
+  }
+  rows+=`
+    <div class="payroll-row"><span>Descuento por tardanzas</span><span class="neg">-${fmtMoney(p.descuentoTardanza)}</span></div>
+    <div class="payroll-row"><span>Descuento por faltas</span><span class="neg">-${fmtMoney(p.descuentoFaltas)}</span></div>
+    <div class="payroll-row"><span>Descuento AFP${p.descuentoAFP===0?' (no aplica)':''}</span><span class="neg">-${fmtMoney(p.descuentoAFP)}</span></div>`;
+  if(p.user.role==='CONDUCTOR'){
+    rows+=`<div class="payroll-row"><span>Descuento por falta de liquidación</span><span class="neg">-${fmtMoney(p.liquidacionDescuentoTotal)}</span></div>`;
+  }
+  rows+=`
+    <div class="payroll-row"><span>Adelantos</span><span class="neg">-${fmtMoney(p.advancesTotal)}</span></div>
+    <div class="payroll-row total"><span>Total a pagar</span><span>${fmtMoney(p.totalPagar)}</span></div>
+  `;
+  return `<div class="card">${rows}</div>`;
+}
+
+/* ---------- MIS PRODUCTOS PERDIDOS (Auxiliar) ---------- */
+function renderMyLosses(){
+  const data=getData();
+  const list=data.incidents.filter(i=>i.user===currentUser.username).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const rows=list.map(i=>`<tr><td>${new Date(i.date).toLocaleDateString('es-ES')}</td><td>${zoneName(i.zone)}</td><td>${i.description}</td><td>${i.planilla||'—'}</td><td>${fmtMoney(i.amount)}</td></tr>`).join('');
+  document.getElementById('myLossesTable').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;color:#999">No tienes incidencias registradas</td></tr>';
+}
+
+/* ---------- NÓMINA GENERAL ---------- */
+function renderPayrollAll(){
+  const val=document.getElementById('payrollAllMonth').value||new Date().toISOString().substring(0,7);
+  const [y,m]=val.split('-').map(Number);
+  const data=getData();
+  const rows=Object.keys(data.users).map(u=>{
+    const p=calcPayroll(u,y,m);
+    return `<tr>
+      <td>${p.user.name}</td>
+      <td><span class="badge badge-${p.user.role}">${ROLES[p.user.role]}</span></td>
+      <td>${fmtMoney(p.baseSalary)}</td>
+      <td class="pos">${fmtMoney(p.overtimePay)}</td>
+      <td class="pos">${fmtMoney(p.bonoAsistenciaPerfecta)}</td>
+      <td class="pos">${fmtMoney(p.bonoCeroPerdidas)}</td>
+      <td class="neg">${fmtMoney(p.hasLossTracking?p.lostProductsTotal:0)}</td>
+      <td class="neg">${fmtMoney(p.descuentoTardanza)}</td>
+      <td class="neg">${fmtMoney(p.descuentoFaltas)}</td>
+      <td class="neg">${fmtMoney(p.descuentoAFP)}</td>
+      <td class="neg">${fmtMoney(p.liquidacionDescuentoTotal)}</td>
+      <td class="neg">${fmtMoney(p.advancesTotal)}</td>
+      <td><strong>${fmtMoney(p.totalPagar)}</strong></td>
+      <td><button class="btn btn-info btn-small" onclick="exportPayslipPDF('${u}',${y},${m})">PDF</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('payrollAllTable').innerHTML=rows||'<tr><td colspan="14" style="text-align:center;color:#999">Sin usuarios</td></tr>';
+}
+
+/* ---------- ADELANTOS (solo Gerente asigna) ---------- */
+function populateUserFilter(selectId,roleFilter,excludeGerente){
+  const data=getData();
+  const sel=document.getElementById(selectId);
+  const current=sel.value;
+  let users=Object.values(data.users);
+  if(roleFilter) users=users.filter(u=>roleFilter.includes(u.role));
+  if(excludeGerente) users=users.filter(u=>u.role!=='GERENTE');
+  sel.innerHTML='<option value="">Todos</option>'+users.map(u=>`<option value="${u.username}">${u.name}</option>`).join('');
+  sel.value=current;
+}
+function renderAdvances(){
+  const data=getData();
+  const advUserSel=document.getElementById('advUser');
+  const workers=Object.values(data.users).filter(u=>u.role!=='GERENTE');
+  advUserSel.innerHTML=workers.map(u=>`<option value="${u.username}">${u.name}</option>`).join('')||'<option value="">No hay trabajadores</option>';
+  populateUserFilter('advFilterUser',null,true);
+  const filterUser=document.getElementById('advFilterUser').value;
+  let list=data.advances;
+  if(filterUser) list=list.filter(a=>a.user===filterUser);
+  const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(a=>{
+    const userName=data.users[a.user]?data.users[a.user].name:a.user;
+    return `<tr><td>${userName}</td><td>${new Date(a.date).toLocaleDateString('es-ES')}</td><td>${fmtMoney(a.amount)}</td><td>${a.reason||'—'}</td>
+    <td><button class="btn btn-danger btn-small" onclick="deleteAdvance('${a.id}')">Eliminar</button></td></tr>`;
+  }).join('');
+  document.getElementById('advancesTable').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;color:#999">Sin adelantos registrados</td></tr>';
+}
+function createAdvance(){
+  const user=document.getElementById('advUser').value;
+  const amount=document.getElementById('advAmount').value;
+  const date=document.getElementById('advDate').value;
+  const reason=document.getElementById('advReason').value;
+  if(!user||!amount||!date){ showAlertOn('advancesAlert','Completa trabajador, monto y fecha','error'); return; }
+  const data=getData();
+  data.advances.push({id:Date.now().toString(),user,date,amount:Number(amount),reason,status:'aprobado',requestedAt:new Date().toISOString()});
+  saveData(data);
+  showAlertOn('advancesAlert','Adelanto registrado','success');
+  document.getElementById('advAmount').value='';document.getElementById('advDate').value='';
+  renderAdvances();
+}
+function deleteAdvance(id){
+  if(!confirm('⚠️ ADVERTENCIA: vas a eliminar este adelanto. Esto modificará el cálculo de nómina del trabajador. ¿Continuar?'))return;
+  const data=getData();
+  data.advances=data.advances.filter(a=>a.id!==id);
+  saveData(data);
+  renderAdvances();
+}
+
+/* ---------- INCIDENCIAS (con selección múltiple y monto dividido) ---------- */
+function populateZoneSelect(selectId,selectedId){
+  const data=getData();
+  const sel=document.getElementById(selectId);
+  const current=selectedId!==undefined?selectedId:sel.value;
+  sel.innerHTML='<option value="">Selecciona zona...</option>'+data.config.zones.map(z=>`<option value="${z.id}">${z.name}</option>`).join('');
+  sel.value=current||'';
+}
+function populateZoneFilter(selectId){
+  const data=getData();
+  const sel=document.getElementById(selectId);
+  const current=sel.value;
+  sel.innerHTML='<option value="">Todas</option>'+data.config.zones.map(z=>`<option value="${z.id}">${z.name}</option>`).join('');
+  sel.value=current;
+}
+function renderIncidents(){
+  const data=getData();
+  const auxSelect=document.getElementById('incUser');
+  const auxUsers=Object.values(data.users).filter(u=>u.role==='AUXILIAR_REPARTO'||u.role==='ADMINISTRADOR');
+  auxSelect.innerHTML=auxUsers.map(u=>`<option value="${u.username}">${u.name}</option>`).join('')||'<option value="">No hay trabajadores elegibles</option>';
+  populateZoneSelect('incZone');
+  populateUserFilter('incFilterUser',['AUXILIAR_REPARTO','ADMINISTRADOR'],false);
+  populateZoneFilter('incFilterZone');
+  const filterUser=document.getElementById('incFilterUser').value;
+  const filterZone=document.getElementById('incFilterZone').value;
+  let list=data.incidents;
+  if(filterUser) list=list.filter(i=>i.user===filterUser);
+  if(filterZone) list=list.filter(i=>i.zone===filterZone);
+  const total=list.reduce((s,i)=>s+Number(i.amount),0);
+  document.getElementById('incidentsTotal').textContent=fmtMoney(total);
+  const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(i=>{
+    const uname=data.users[i.user]?data.users[i.user].name:i.user;
+    const sharedNote=i.sharedCount&&i.sharedCount>1?` <span class="hint" style="margin:0">(÷${i.sharedCount})</span>`:'';
+    return `<tr><td>${uname}</td><td>${new Date(i.date).toLocaleDateString('es-ES')}</td><td>${zoneName(i.zone)}</td><td>${i.description}</td><td>${i.planilla||'—'}</td><td>${fmtMoney(i.amount)}${sharedNote}</td>
+    <td><button class="btn btn-danger btn-small" onclick="deleteIncident('${i.id}')">Eliminar</button></td></tr>`;
+  }).join('');
+  document.getElementById('incidentsTable').innerHTML=rows||'<tr><td colspan="7" style="text-align:center;color:#999">Sin incidencias</td></tr>';
+}
+function createIncident(){
+  const select=document.getElementById('incUser');
+  const selectedUsers=Array.from(select.selectedOptions).map(o=>o.value);
+  const zone=document.getElementById('incZone').value;
+  const date=document.getElementById('incDate').value;
+  const totalAmount=document.getElementById('incAmount').value;
+  const planilla=document.getElementById('incPlanilla').value;
+  const desc=document.getElementById('incDesc').value;
+  if(selectedUsers.length===0){ showAlertOn('incidentsAlert','Selecciona al menos un trabajador responsable','error'); return; }
+  if(!zone||!date||!totalAmount||!desc){ showAlertOn('incidentsAlert','Completa zona, fecha, monto y descripción','error'); return; }
+  const data=getData();
+  const groupId=Date.now().toString();
+  const perWorkerAmount=Number(totalAmount)/selectedUsers.length;
+  const finalDesc=selectedUsers.length>1?`${desc} (compartido entre ${selectedUsers.length} trabajadores)`:desc;
+  selectedUsers.forEach((user,idx)=>{
+    data.incidents.push({id:groupId+'_'+idx,groupId,user,zone,date,amount:perWorkerAmount,totalAmount:Number(totalAmount),sharedCount:selectedUsers.length,planilla,description:finalDesc,createdBy:currentUser.username});
+  });
+  saveData(data);
+  showAlertOn('incidentsAlert',selectedUsers.length>1?`Incidencia registrada y dividida entre ${selectedUsers.length} trabajadores (${fmtMoney(perWorkerAmount)} c/u)`:'Incidencia registrada','success');
+  document.getElementById('incDate').value='';document.getElementById('incAmount').value='';document.getElementById('incPlanilla').value='';document.getElementById('incDesc').value='';
+  renderIncidents();
+}
+function deleteIncident(id){
+  if(!confirm('⚠️ ADVERTENCIA: vas a eliminar esta incidencia de producto perdido. Esto modificará el bono de cero pérdidas y el descuento del trabajador para ese mes. ¿Deseas continuar?'))return;
+  const data=getData();
+  data.incidents=data.incidents.filter(i=>i.id!==id);
+  saveData(data);
+  renderIncidents();
+}
+
+/* ---------- FALTANTE DE LIQUIDACIÓN (solo Conductor) ---------- */
+function renderDiscounts(){
+  const data=getData();
+  const userSel=document.getElementById('discUser');
+  const eligible=Object.values(data.users).filter(u=>u.role===LIQUIDACION_ROLE);
+  userSel.innerHTML=eligible.map(u=>`<option value="${u.username}">${u.name}</option>`).join('')||'<option value="">No hay conductores registrados</option>';
+  populateZoneSelect('discZone');
+  populateUserFilter('discFilterUser',[LIQUIDACION_ROLE],false);
+  const filterUser=document.getElementById('discFilterUser').value;
+  let list=data.otherDiscounts;
+  if(filterUser) list=list.filter(d=>d.user===filterUser);
+  const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(d=>{
+    const uname=data.users[d.user]?data.users[d.user].name:d.user;
+    return `<tr><td>${uname}</td><td>${new Date(d.date).toLocaleDateString('es-ES')}</td><td>${zoneName(d.zone)}</td><td>${d.planilla||'—'}</td><td>${fmtMoney(d.amount)}</td>
+    <td><button class="btn btn-danger btn-small" onclick="deleteDiscount('${d.id}')">Eliminar</button></td></tr>`;
+  }).join('');
+  document.getElementById('discountsTable').innerHTML=rows||'<tr><td colspan="6" style="text-align:center;color:#999">Sin faltantes registrados</td></tr>';
+}
+function createDiscount(){
+  const user=document.getElementById('discUser').value;
+  const zone=document.getElementById('discZone').value;
+  const date=document.getElementById('discDate').value;
+  const amount=document.getElementById('discAmount').value;
+  const planilla=document.getElementById('discPlanilla').value;
+  if(!user||!zone||!date||!amount){ showAlertOn('discountsAlert','Completa conductor, zona, fecha y monto','error'); return; }
+  const data=getData();
+  data.otherDiscounts.push({id:Date.now().toString(),user,type:'liquidacion',zone,date,amount:Number(amount),planilla,createdBy:currentUser.username});
+  saveData(data);
+  showAlertOn('discountsAlert','Faltante registrado','success');
+  document.getElementById('discDate').value='';document.getElementById('discAmount').value='';document.getElementById('discPlanilla').value='';
+  renderDiscounts();
+}
+function deleteDiscount(id){
+  if(!confirm('⚠️ ADVERTENCIA: vas a eliminar este faltante de liquidación. Esto modificará el cálculo de nómina del conductor. ¿Continuar?'))return;
+  const data=getData();
+  data.otherDiscounts=data.otherDiscounts.filter(d=>d.id!==id);
+  saveData(data);
+  renderDiscounts();
+}
+
+/* ---------- USUARIOS (solo Gerente) ---------- */
+function renderUsers(){
+  const data=getData();
+  const rows=Object.values(data.users).map(u=>{
+    const sched=getEffectiveSchedule(u);
+    const custom=u.customWorkStart?' (personalizado)':'';
+    const faceBadge=u.faceDescriptor?'<span class="badge badge-active">Registrado</span>':'<span class="badge badge-inactive">Sin registrar</span>';
+    return `<tr><td>${u.username}</td><td>${u.name}</td><td><span class="badge badge-${u.role}">${ROLES[u.role]}</span></td>
+    <td>${locationName(u.assignedLocationId)}</td>
+    <td>${timeStrFromMinutes(sched.workStartMinutes)}${custom}</td>
+    <td>${fmtMoney(u.baseSalary)}</td>
+    <td>${u.afpApplies===false?'No':'Sí'}</td>
+    <td>${faceBadge}</td>
+    <td><span class="badge ${u.active?'badge-active':'badge-inactive'}">${u.active?'Activo':'Inactivo'}</span></td>
+    <td><button class="btn btn-warning btn-small" onclick="editUser('${u.username}')">Editar</button>
+        <button class="btn btn-danger btn-small" onclick="confirmDeleteUser('${u.username}')">Eliminar</button></td></tr>`;
+  }).join('');
+  document.getElementById('usersTable').innerHTML=rows||'<tr><td colspan="10" style="text-align:center;color:#999">Sin usuarios</td></tr>';
+}
+function filterUsers(){
+  const s=document.getElementById('searchUsers').value.toLowerCase();
+  document.querySelectorAll('#usersTable tr').forEach(r=>{ r.style.display=r.textContent.toLowerCase().includes(s)?'':'none'; });
+}
+function updateScheduleHint(){
+  const role=document.getElementById('fRole').value;
+  const hintEl=document.getElementById('scheduleHint');
+  if(!role){hintEl.textContent='Selecciona un rol para ver su horario por defecto.';return;}
+  const data=getData();
+  const s=data.config.schedules[role];
+  hintEl.textContent=`Horario del rol "${ROLES[role]}": inicio ${timeStrFromMinutes(s.workStartMinutes)}, salida ${timeStrFromMinutes(s.exitMinutes)}, tolerancia ${s.toleranceMinutes} min, refrigerio ${s.breakMinutes} min.`;
+}
+function populateLocationSelect(selectedId){
+  const data=getData();
+  const sel=document.getElementById('fLocation');
+  sel.innerHTML='<option value="">Sin asignar</option>'+data.config.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  sel.value=selectedId||'';
+}
+function openUserModal(){
+  editingUsername=null;pendingFaceDescriptor=null;
+  document.getElementById('userModalTitle').textContent='Crear Usuario';
+  document.getElementById('fUsername').disabled=false;
+  document.getElementById('fUsername').value='';
+  document.getElementById('fPassword').value='';document.getElementById('fPassword').placeholder='';document.getElementById('fPassword').type='password';
+  document.getElementById('fName').value='';
+  document.getElementById('fRole').value='';document.getElementById('fSalary').value='';
+  document.getElementById('fCustomStart').value='';
+  populateLocationSelect('');
+  document.getElementById('scheduleHint').textContent='Selecciona un rol para ver su horario por defecto.';
+  document.getElementById('fAfpApplies').checked=true;
+  document.getElementById('fActive').checked=true;
+  document.getElementById('fDeleteBtn').style.display='none';
+  document.getElementById('userModalAlert').innerHTML='';
+  document.getElementById('faceRequiredMark').style.display='inline';
+  document.getElementById('regFaceStatus').innerHTML='';
+  stopRegFace();
+  document.getElementById('userModal').classList.add('active');
+}
+function editUser(username){
+  const data=getData();const u=data.users[username];if(!u)return;
+  editingUsername=username;pendingFaceDescriptor=null;
+  document.getElementById('userModalTitle').textContent='Editar: '+username;
+  document.getElementById('fUsername').value=u.username;document.getElementById('fUsername').disabled=true;
+  document.getElementById('fPassword').value='';document.getElementById('fPassword').placeholder='Dejar en blanco para no cambiar';document.getElementById('fPassword').type='password';
+  document.getElementById('fName').value=u.name;
+  document.getElementById('fRole').value=u.role;document.getElementById('fSalary').value=u.baseSalary;
+  document.getElementById('fCustomStart').value=u.customWorkStart||'';
+  populateLocationSelect(u.assignedLocationId||'');
+  updateScheduleHint();
+  document.getElementById('fAfpApplies').checked=u.afpApplies!==false;
+  document.getElementById('fActive').checked=u.active;
+  document.getElementById('fDeleteBtn').style.display='inline-block';
+  document.getElementById('userModalAlert').innerHTML='';
+  document.getElementById('faceRequiredMark').style.display='none';
+  document.getElementById('regFaceStatus').innerHTML=u.faceDescriptor?'<div class="geo-status geo-ok">✅ Este trabajador ya tiene rostro registrado. Captura de nuevo solo si quieres reemplazarlo.</div>':'<div class="geo-status geo-fail">⚠️ Este trabajador no tiene rostro registrado. No podrá marcar asistencia hasta que lo registres.</div>';
+  stopRegFace();
+  document.getElementById('userModal').classList.add('active');
+}
+function closeUserModal(){ stopRegFace(); document.getElementById('userModal').classList.remove('active'); }
+function saveUser(e){
+  e.preventDefault();
+  const data=getData();
+  const username=document.getElementById('fUsername').value.trim();
+  const password=document.getElementById('fPassword').value;
+  const name=document.getElementById('fName').value.trim();
+  const role=document.getElementById('fRole').value;
+  const salary=Number(document.getElementById('fSalary').value);
+  const customWorkStart=document.getElementById('fCustomStart').value;
+  const assignedLocationId=document.getElementById('fLocation').value;
+  const afpApplies=document.getElementById('fAfpApplies').checked;
+  const active=document.getElementById('fActive').checked;
+  if(!username||!name||!role||isNaN(salary)){
+    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">Completa todos los campos</div>';return;
+  }
+  if(!editingUsername&&data.users[username]){
+    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">Ese usuario ya existe</div>';return;
+  }
+  if(!editingUsername&&!pendingFaceDescriptor){
+    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">Debes registrar el rostro del trabajador antes de guardar</div>';return;
+  }
+  if(editingUsername){
+    const u=data.users[editingUsername];
+    u.name=name;u.role=role;u.baseSalary=salary;u.active=active;u.customWorkStart=customWorkStart;
+    u.assignedLocationId=assignedLocationId;u.afpApplies=afpApplies;
+    if(password)u.password=password;
+    if(pendingFaceDescriptor)u.faceDescriptor=pendingFaceDescriptor;
+  }else{
+    if(!password){document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">La contraseña es requerida</div>';return;}
+    data.users[username]={username,password,name,role,baseSalary:salary,active,customWorkStart,assignedLocationId,afpApplies,faceDescriptor:pendingFaceDescriptor,createdAt:new Date().toISOString()};
+  }
+  saveData(data);
+  closeUserModal();
+  renderUsers();
+}
+function deleteUser(){
+  if(!editingUsername)return;
+  if(!confirm('¿Eliminar usuario '+editingUsername+'?'))return;
+  const data=getData();
+  delete data.users[editingUsername];
+  saveData(data);
+  closeUserModal();
+  renderUsers();
+}
+function confirmDeleteUser(username){
+  if(!confirm('¿Eliminar usuario '+username+'?'))return;
+  const data=getData();delete data.users[username];saveData(data);renderUsers();
+}
+
+/* ---------- CONFIGURACIÓN (solo Gerente) ---------- */
+function switchConfigTab(e,id){
+  document.querySelectorAll('#config .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#config .tab-content').forEach(c=>c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+function renderConfig(){
+  renderLocations();
+  renderZones();
+  renderSchedules();
+  const data=getData();const c=data.config;
+  document.getElementById('cfgCompanyName').value=c.companyName;
+  document.getElementById('cfgCompanyLogo').value=c.companyLogoText;
+  document.getElementById('cfgBonoAsistencia').value=c.bonoAsistenciaPerfecta;
+  document.getElementById('cfgBonoCeroPerdidas').value=c.bonoCeroPerdidas;
+  document.getElementById('cfgTarifaTardanza').value=c.tarifaTardanzaPorMinuto;
+  document.getElementById('cfgMontoFalta').value=c.montoFaltaInjustificada;
+  document.getElementById('cfgAfpAmount').value=c.afpAmount;
+}
+function saveCompanyConfig(){
+  const data=getData();
+  const name=document.getElementById('cfgCompanyName').value.trim();
+  const logo=document.getElementById('cfgCompanyLogo').value.trim().toUpperCase();
+  if(!name){ showAlertOn('configAlert','Escribe el nombre de la empresa','error'); return; }
+  data.config.companyName=name;
+  data.config.companyLogoText=logo||name.substring(0,2).toUpperCase();
+  saveData(data);
+  showAlertOn('configAlert','Datos de la empresa guardados','success');
+}
+
+function renderLocations(){
+  const data=getData();
+  const rows=data.config.locations.map(l=>`
+    <tr><td>${l.name}</td><td>${l.lat}</td><td>${l.lng}</td><td>${l.radius}</td>
+    <td><button class="btn btn-warning btn-small" onclick="editLocation('${l.id}')">Editar</button>
+        <button class="btn btn-danger btn-small" onclick="deleteLocation('${l.id}')">Eliminar</button></td></tr>`).join('');
+  document.getElementById('locationsTable').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;color:#999">Sin ubicaciones registradas</td></tr>';
+}
+function useMyLocationForForm(){
+  if(!navigator.geolocation){alert('Geolocalización no soportada');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    document.getElementById('locLat').value=pos.coords.latitude.toFixed(6);
+    document.getElementById('locLng').value=pos.coords.longitude.toFixed(6);
+  },err=>alert('No se pudo obtener ubicación: '+err.message));
+}
+function saveLocation(){
+  const name=document.getElementById('locName').value.trim();
+  const lat=Number(document.getElementById('locLat').value);
+  const lng=Number(document.getElementById('locLng').value);
+  const radius=Number(document.getElementById('locRadius').value);
+  if(!name||isNaN(lat)||isNaN(lng)||!radius){ showAlertOn('configAlert','Completa nombre, latitud, longitud y radio','error'); return; }
+  const data=getData();
+  if(editingLocationId){
+    const loc=data.config.locations.find(l=>l.id===editingLocationId);
+    if(loc){ loc.name=name;loc.lat=lat;loc.lng=lng;loc.radius=radius; }
+    editingLocationId=null;
+    document.getElementById('locFormTitle').textContent='Agregar ubicación';
+    document.getElementById('locCancelBtn').style.display='none';
+  }else{
+    data.config.locations.push({id:'loc_'+Date.now(),name,lat,lng,radius});
+  }
+  saveData(data);
+  document.getElementById('locName').value='';document.getElementById('locLat').value='';document.getElementById('locLng').value='';document.getElementById('locRadius').value='150';
+  showAlertOn('configAlert','Ubicación guardada','success');
+  renderLocations();
+}
+function editLocation(id){
+  const data=getData();
+  const loc=data.config.locations.find(l=>l.id===id);
+  if(!loc)return;
+  editingLocationId=id;
+  document.getElementById('locFormTitle').textContent='Editar ubicación';
+  document.getElementById('locName').value=loc.name;
+  document.getElementById('locLat').value=loc.lat;
+  document.getElementById('locLng').value=loc.lng;
+  document.getElementById('locRadius').value=loc.radius;
+  document.getElementById('locCancelBtn').style.display='inline-block';
+}
+function cancelLocationEdit(){
+  editingLocationId=null;
+  document.getElementById('locFormTitle').textContent='Agregar ubicación';
+  document.getElementById('locCancelBtn').style.display='none';
+  document.getElementById('locName').value='';document.getElementById('locLat').value='';document.getElementById('locLng').value='';document.getElementById('locRadius').value='150';
+}
+function deleteLocation(id){
+  if(!confirm('⚠️ ADVERTENCIA: si eliminas esta ubicación, los trabajadores asignados a ella ya no podrán marcar asistencia usándola. ¿Continuar?'))return;
+  const data=getData();
+  data.config.locations=data.config.locations.filter(l=>l.id!==id);
+  saveData(data);
+  renderLocations();
+}
+
+/* Zonas */
+function renderZones(){
+  const data=getData();
+  const rows=data.config.zones.map(z=>`
+    <tr><td>${z.name}</td>
+    <td><button class="btn btn-warning btn-small" onclick="editZone('${z.id}')">Editar</button>
+        <button class="btn btn-danger btn-small" onclick="deleteZone('${z.id}')">Eliminar</button></td></tr>`).join('');
+  document.getElementById('zonesTable').innerHTML=rows||'<tr><td colspan="2" style="text-align:center;color:#999">Sin zonas registradas</td></tr>';
+}
+function saveZone(){
+  const name=document.getElementById('zoneName').value.trim();
+  if(!name){ showAlertOn('configAlert','Escribe el nombre de la zona','error'); return; }
+  const data=getData();
+  if(editingZoneId){
+    const z=data.config.zones.find(z=>z.id===editingZoneId);
+    if(z) z.name=name;
+    editingZoneId=null;
+    document.getElementById('zoneFormTitle').textContent='Agregar zona';
+    document.getElementById('zoneCancelBtn').style.display='none';
+  }else{
+    data.config.zones.push({id:'zone_'+Date.now(),name});
+  }
+  saveData(data);
+  document.getElementById('zoneName').value='';
+  showAlertOn('configAlert','Zona guardada','success');
+  renderZones();
+}
+function editZone(id){
+  const data=getData();
+  const z=data.config.zones.find(z=>z.id===id);
+  if(!z)return;
+  editingZoneId=id;
+  document.getElementById('zoneFormTitle').textContent='Editar zona';
+  document.getElementById('zoneName').value=z.name;
+  document.getElementById('zoneCancelBtn').style.display='inline-block';
+}
+function cancelZoneEdit(){
+  editingZoneId=null;
+  document.getElementById('zoneFormTitle').textContent='Agregar zona';
+  document.getElementById('zoneCancelBtn').style.display='none';
+  document.getElementById('zoneName').value='';
+}
+function deleteZone(id){
+  if(!confirm('⚠️ ADVERTENCIA: esta zona podría estar usada en incidencias o faltantes existentes; esos registros quedarán sin zona visible. ¿Continuar?'))return;
+  const data=getData();
+  data.config.zones=data.config.zones.filter(z=>z.id!==id);
+  saveData(data);
+  renderZones();
+}
+
+function renderSchedules(){
+  const data=getData();
+  const rows=ROLE_LIST.map(role=>{
+    const s=data.config.schedules[role];
+    return `<tr>
+      <td>${ROLES[role]}</td>
+      <td><input type="time" id="sched_${role}_start" value="${timeStrFromMinutes(s.workStartMinutes)}" style="width:110px"></td>
+      <td><input type="time" id="sched_${role}_exit" value="${timeStrFromMinutes(s.exitMinutes)}" style="width:110px"></td>
+      <td><input type="number" id="sched_${role}_tol" value="${s.toleranceMinutes}" style="width:80px"></td>
+      <td><input type="number" id="sched_${role}_std" value="${s.standardWorkMinutes}" style="width:90px"></td>
+      <td><input type="number" id="sched_${role}_break" value="${s.breakMinutes}" style="width:80px"></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('scheduleTable').innerHTML=rows;
+}
+function saveSchedules(){
+  const data=getData();
+  ROLE_LIST.forEach(role=>{
+    data.config.schedules[role]={
+      workStartMinutes:minutesFromTimeStr(document.getElementById(`sched_${role}_start`).value),
+      exitMinutes:minutesFromTimeStr(document.getElementById(`sched_${role}_exit`).value),
+      toleranceMinutes:Number(document.getElementById(`sched_${role}_tol`).value),
+      standardWorkMinutes:Number(document.getElementById(`sched_${role}_std`).value),
+      breakMinutes:Number(document.getElementById(`sched_${role}_break`).value)
+    };
+  });
+  saveData(data);
+  showAlertOn('configAlert','Horarios por rol guardados','success');
+}
+
+function saveRatesConfig(){
+  const data=getData();
+  data.config.bonoAsistenciaPerfecta=Number(document.getElementById('cfgBonoAsistencia').value);
+  data.config.bonoCeroPerdidas=Number(document.getElementById('cfgBonoCeroPerdidas').value);
+  data.config.tarifaTardanzaPorMinuto=Number(document.getElementById('cfgTarifaTardanza').value);
+  data.config.montoFaltaInjustificada=Number(document.getElementById('cfgMontoFalta').value);
+  data.config.afpAmount=Number(document.getElementById('cfgAfpAmount').value);
+  saveData(data);
+  showAlertOn('configAlert','Configuración de bonos/descuentos guardada','success');
+}
+
+/* ---------- EXPORTACIÓN PDF / EXCEL (con logo y nombre de empresa) ---------- */
+function payslipRows(p){
+  const rows=[
+    ['Sueldo base', fmtMoney(p.baseSalary)],
+    ['Días asistidos / hábiles', `${p.daysAttended} / ${p.businessDays}`],
+    ['Faltas injustificadas', String(p.faltas)],
+    ['Minutos tardanza acumulados (mes)', fmtMinutes(p.tardinessMinutes)],
+    ['Minutos extra acumulados (después de hora salida)', fmtMinutes(p.extraMinutes)],
+    ['Horas extra netas (pago)', `+${fmtMoney(p.overtimePay)} (${fmtMinutes(p.overtimeNetMinutes)})`],
+  ];
+  if(p.user.role!=='CONTABILIDAD'){
+    rows.push(['Bono asistencia perfecta', `+${fmtMoney(p.bonoAsistenciaPerfecta)}`]);
+  }
+  if(p.isAuxiliarBonus){
+    rows.push(['Bono cero pérdidas', `+${fmtMoney(p.bonoCeroPerdidas)}`]);
+  }
+  if(p.hasLossTracking){
+    rows.push(['Descuento productos perdidos', `-${fmtMoney(p.lostProductsTotal)}`]);
+  }
+  rows.push(['Descuento por tardanzas', `-${fmtMoney(p.descuentoTardanza)}`]);
+  rows.push(['Descuento por faltas', `-${fmtMoney(p.descuentoFaltas)}`]);
+  rows.push(['Descuento AFP', `-${fmtMoney(p.descuentoAFP)}`]);
+  if(p.user.role==='CONDUCTOR'){
+    rows.push(['Descuento por falta de liquidación', `-${fmtMoney(p.liquidacionDescuentoTotal)}`]);
+  }
+  rows.push(['Adelantos', `-${fmtMoney(p.advancesTotal)}`]);
+  rows.push(['TOTAL A PAGAR', fmtMoney(p.totalPagar)]);
+  return rows;
+}
+function drawPdfHeader(doc,cfg){
+  doc.setFillColor(102,126,234);
+  doc.roundedRect(14,10,20,20,3,3,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(13);
+  doc.setFont(undefined,'bold');
+  doc.text(cfg.companyLogoText||'D',24,23,{align:'center'});
+  doc.setTextColor(30,30,30);
+  doc.setFontSize(16);
+  doc.text(cfg.companyName||'Mi Distribuidora',40,18);
+  doc.setFontSize(10);
+  doc.setFont(undefined,'normal');
+  doc.setTextColor(110,110,110);
+  doc.text('Boleta de Pago',40,25);
+  doc.setDrawColor(220,220,220);
+  doc.line(14,34,196,34);
+  doc.setTextColor(30,30,30);
+  return 42;
+}
+function drawPayslipMeta(doc,p,username,year,month,y){
+  doc.setFontSize(10);
+  doc.setFont(undefined,'bold');
+  doc.text('Periodo:',14,y); doc.setFont(undefined,'normal'); doc.text(`${pad2(month)}/${year}`,45,y);
+  doc.setFont(undefined,'bold');
+  doc.text('Trabajador:',14,y+6); doc.setFont(undefined,'normal'); doc.text(`${p.user.name} (${username})`,45,y+6);
+  doc.setFont(undefined,'bold');
+  doc.text('Rol:',14,y+12); doc.setFont(undefined,'normal'); doc.text(ROLES[p.user.role],45,y+12);
+  return y+20;
+}
+function drawPayslipTable(doc,p,y){
+  const rows=payslipRows(p);
+  if(doc.autoTable){
+    doc.autoTable({
+      startY:y,
+      head:[['Concepto','Monto']],
+      body:rows,
+      theme:'grid',
+      styles:{fontSize:9,cellPadding:4},
+      headStyles:{fillColor:[102,126,234],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[248,249,250]},
+      columnStyles:{1:{halign:'right'}},
+      didParseCell:function(d){
+        if(d.row.index===rows.length-1 && d.section==='body'){
+          d.cell.styles.fontStyle='bold';
+          d.cell.styles.fillColor=[230,235,255];
+        }
+      }
+    });
+    return doc.lastAutoTable.finalY+10;
+  }
+  rows.forEach(r=>{ doc.text(String(r[0]),14,y); doc.text(String(r[1]),140,y); y+=7; if(y>280){doc.addPage();y=18;} });
+  return y+10;
+}
+function exportMyPayslipPDF(){
+  const val=document.getElementById('payrollMonth').value||new Date().toISOString().substring(0,7);
+  const [y,m]=val.split('-').map(Number);
+  exportPayslipPDF(currentUser.username,y,m);
+}
+function exportMyPayslipExcel(){
+  const val=document.getElementById('payrollMonth').value||new Date().toISOString().substring(0,7);
+  const [y,m]=val.split('-').map(Number);
+  exportPayslipExcel(currentUser.username,y,m);
+}
+function exportPayslipPDF(username,year,month){
+  if(!window.jspdf){alert('No se pudo cargar la librería de PDF (requiere conexión a internet).');return;}
+  const {jsPDF}=window.jspdf;
+  const data=getData();
+  const cfg=data.config;
+  const p=calcPayroll(username,year,month);
+  const doc=new jsPDF();
+  let y=drawPdfHeader(doc,cfg);
+  y=drawPayslipMeta(doc,p,username,year,month,y);
+  drawPayslipTable(doc,p,y);
+  doc.save(`boleta_${username}_${year}-${pad2(month)}.pdf`);
+}
+function exportPayslipExcel(username,year,month){
+  if(!window.XLSX){alert('No se pudo cargar la librería de Excel (requiere conexión a internet).');return;}
+  const data=getData();
+  const cfg=data.config;
+  const p=calcPayroll(username,year,month);
+  const rows=[[cfg.companyName],['Boleta de Pago'],[`Periodo: ${month}/${year}`],[`Trabajador: ${p.user.name} (${username})`],[`Rol: ${ROLES[p.user.role]}`],[],['Concepto','Monto'],...payslipRows(p)];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Boleta');
+  XLSX.writeFile(wb,`boleta_${username}_${year}-${pad2(month)}.xlsx`);
+}
+function exportAllPayslipsPDF(){
+  if(!window.jspdf){alert('No se pudo cargar la librería de PDF (requiere conexión a internet).');return;}
+  const val=document.getElementById('payrollAllMonth').value||new Date().toISOString().substring(0,7);
+  const [year,month]=val.split('-').map(Number);
+  const {jsPDF}=window.jspdf;
+  const data=getData();
+  const cfg=data.config;
+  const doc=new jsPDF();
+  let first=true;
+  Object.keys(data.users).forEach(u=>{
+    if(!first) doc.addPage();
+    first=false;
+    const p=calcPayroll(u,year,month);
+    let y=drawPdfHeader(doc,cfg);
+    y=drawPayslipMeta(doc,p,u,year,month,y);
+    drawPayslipTable(doc,p,y);
+  });
+  doc.save(`boletas_todos_${year}-${pad2(month)}.pdf`);
+}
+function exportAllPayslipsExcel(){
+  if(!window.XLSX){alert('No se pudo cargar la librería de Excel (requiere conexión a internet).');return;}
+  const val=document.getElementById('payrollAllMonth').value||new Date().toISOString().substring(0,7);
+  const [year,month]=val.split('-').map(Number);
+  const data=getData();
+  const cfg=data.config;
+  const header=['Usuario','Nombre','Rol','Sueldo Base','Días Asistidos','Días Hábiles','Faltas','Min. Tardanza','Min. Extra','Pago H.Extra','Bono Asistencia','Bono Cero Pérdidas','Desc. Productos','Desc. Tardanza','Desc. Faltas','Desc. AFP','Desc. Liquidación','Adelantos','Total a pagar'];
+  const rows=[[cfg.companyName],[`Nómina General - ${month}/${year}`],[],header];
+  Object.keys(data.users).forEach(u=>{
+    const p=calcPayroll(u,year,month);
+    rows.push([u,p.user.name,ROLES[p.user.role],p.baseSalary,p.daysAttended,p.businessDays,p.faltas,p.tardinessMinutes,p.extraMinutes,round2(p.overtimePay),round2(p.bonoAsistenciaPerfecta),round2(p.bonoCeroPerdidas),round2(p.hasLossTracking?p.lostProductsTotal:0),round2(p.descuentoTardanza),round2(p.descuentoFaltas),round2(p.descuentoAFP),round2(p.liquidacionDescuentoTotal),round2(p.advancesTotal),round2(p.totalPagar)]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Nomina');
+  XLSX.writeFile(wb,`nomina_general_${year}-${pad2(month)}.xlsx`);
+}
+
+/* ---------- INIT ---------- */
+document.addEventListener('DOMContentLoaded',()=>{ initData(); tickClock(); });
+</script>
+</body>
+</html>
