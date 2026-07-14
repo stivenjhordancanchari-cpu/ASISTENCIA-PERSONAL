@@ -3,501 +3,969 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Distribuidora - Control de Asistencias y Nómina</title>
+<title>Distribuidora — Control de Asistencias</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
-body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
-.container{max-width:1500px;margin:0 auto;background:#fff;border-radius:15px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
-.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:25px 30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.header h1{font-size:22px}
-.header .userbox{text-align:right;font-size:13px}
-.logout-btn{background:#dc3545;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;margin-top:5px}
-.content{display:flex;min-height:600px}
-.sidebar{width:230px;background:#f8f9fa;padding:15px;border-right:1px solid #ddd;flex-shrink:0}
-.nav-item{padding:11px 14px;margin-bottom:8px;background:#fff;border:2px solid transparent;border-radius:8px;cursor:pointer;font-weight:500;color:#333;font-size:13px;transition:.2s}
-.nav-item:hover{border-color:#667eea}
-.nav-item.active{background:#667eea;color:#fff}
-.main{flex:1;padding:30px;overflow-x:auto}
-.screen{display:none}.screen.active{display:block}
-.screen h2{color:#667eea;margin-bottom:22px;font-size:21px}
-.form-group{margin-bottom:16px}
-.form-group label{display:block;margin-bottom:6px;font-weight:500;font-size:13px;color:#333}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px;border:2px solid #ddd;border-radius:7px;font-size:13px}
-.form-group input:focus,.form-group select:focus{outline:none;border-color:#667eea}
-.form-group select[multiple]{height:auto}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.hint{font-size:11px;color:#777;margin-top:-10px;margin-bottom:14px}
-.btn{padding:10px 22px;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px;transition:.2s}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(102,126,234,.4)}
-.btn-success{background:#28a745;color:#fff}.btn-success:hover{background:#218838}
-.btn-danger{background:#dc3545;color:#fff}.btn-danger:hover{background:#c82333}
-.btn-warning{background:#ffc107;color:#333}.btn-warning:hover{background:#e0a800}
-.btn-info{background:#17a2b8;color:#fff}.btn-info:hover{background:#117a8b}
-.btn-small{padding:6px 12px;font-size:11px;margin-right:4px;margin-bottom:4px}
-.alert{padding:12px 15px;border-radius:7px;margin-bottom:16px;font-size:13px}
-.alert-success{background:#d4edda;color:#155724}
-.alert-error{background:#f8d7da;color:#721c24}
-.alert-warning{background:#fff3cd;color:#856404}
-.alert-info{background:#d1ecf1;color:#0c5460}
-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px}
-th{background:#f8f9fa;padding:9px;text-align:left;border-bottom:2px solid #ddd;font-weight:600;white-space:nowrap}
-td{padding:9px;border-bottom:1px solid #eee;white-space:nowrap}
-tr:hover{background:#f8f9fa}
-.badge{display:inline-block;padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600}
-.badge-GERENTE{background:#e7d4f5;color:#6f42c1}
-.badge-ADMINISTRADOR{background:#cfe2ff;color:#084298}
-.badge-CONTABILIDAD{background:#d1ecf1;color:#0c5460}
-.badge-AUXILIAR_REPARTO{background:#ffe5d0;color:#a15c00}
-.badge-TIENDA{background:#d4edda;color:#155724}
-.badge-CONDUCTOR{background:#d0e8ff;color:#004085}
-.badge-active{background:#d4edda;color:#155724}
-.badge-inactive{background:#f8d7da;color:#721c24}
-.badge-liquidacion{background:#f8d7da;color:#721c24}
-.card{background:#f8f9fa;padding:18px;border-radius:10px;border-left:4px solid #667eea}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:26px}
-.stat-card{background:#f8f9fa;padding:16px;border-radius:10px;border-left:4px solid #667eea;text-align:center}
-.stat-card h3{color:#667eea;font-size:11px;text-transform:uppercase;margin-bottom:8px}
-.stat-card .val{font-size:24px;font-weight:bold;color:#333}
-.stat-card.neg .val{color:#dc3545}
-.stat-card.pos .val{color:#28a745}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
-.modal.active{display:flex}
-.modal-content{background:#fff;padding:26px;border-radius:12px;max-width:500px;width:92%;max-height:88vh;overflow-y:auto}
-.modal-header{font-size:18px;font-weight:600;color:#667eea;margin-bottom:16px;display:flex;justify-content:space-between}
-.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#999}
-.clock{font-size:40px;font-weight:bold;color:#667eea;font-family:monospace;text-align:center}
-.geo-box{background:#f8f9fa;padding:16px;border-radius:8px;margin:14px 0;font-size:13px}
-.geo-status{padding:8px 12px;border-radius:6px;font-weight:600;margin-top:8px;display:inline-block}
-.geo-ok{background:#d4edda;color:#155724}
-.geo-fail{background:#f8d7da;color:#721c24}
-.geo-wait{background:#fff3cd;color:#856404}
-.face-preview{width:100%;max-width:280px;border-radius:8px;background:#000;margin:10px auto;display:block}
-.tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid #eee;flex-wrap:wrap}
-.tab-btn{padding:9px 16px;background:none;border:none;cursor:pointer;font-weight:500;font-size:13px;border-bottom:3px solid transparent;color:#666}
-.tab-btn.active{color:#667eea;border-color:#667eea}
-.tab-content{display:none}.tab-content.active{display:block}
-.search-box input{padding:9px;border:2px solid #ddd;border-radius:7px;width:100%;max-width:280px;margin-bottom:14px}
-.payroll-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eee;font-size:13px}
-.payroll-row.total{font-weight:bold;font-size:15px;color:#667eea;border-top:2px solid #667eea;margin-top:6px}
-.payroll-row .neg{color:#dc3545}.payroll-row .pos{color:#28a745}
-.export-bar{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap}
-.filters-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
-.filters-row .form-group{max-width:260px}
-.info-banner{background:#e7f3ff;border-left:4px solid #667eea;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px}
-.table-scroll{overflow-x:auto}
+/* ───── TOKENS ───── */
+:root {
+  --brand:       #2563EB;   /* Azul corporativo */
+  --brand-dark:  #1E40AF;
+  --brand-light: #DBEAFE;
+  --accent:      #F59E0B;   /* Ámbar cálido — firma visual */
+  --accent-dark: #B45309;
+  --success:     #16A34A;
+  --danger:      #DC2626;
+  --warn:        #D97706;
+  --bg:          #F8FAFC;
+  --sidebar-bg:  #1E293B;   /* Sidebar oscuro — contraste con contenido */
+  --sidebar-txt: #CBD5E1;
+  --sidebar-act: #2563EB;
+  --card:        #FFFFFF;
+  --border:      #E2E8F0;
+  --txt:         #1E293B;
+  --txt-soft:    #64748B;
+  --txt-inv:     #FFFFFF;
+  --radius:      10px;
+  --radius-lg:   16px;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+  --shadow:      0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,.14);
+  --font:        'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ───── RESET ───── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:14px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;flex-direction:column}
+
+/* ───── LAYOUT SHELL ───── */
+.app{display:flex;min-height:100vh}
+
+/* ───── SIDEBAR ───── */
+.sidebar{
+  width:240px;background:var(--sidebar-bg);color:var(--sidebar-txt);
+  display:flex;flex-direction:column;flex-shrink:0;
+  position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:50;
+  transition:transform .25s ease;
+}
+.sidebar-header{
+  padding:24px 20px 18px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.sidebar-logo{
+  display:flex;align-items:center;gap:10px;
+  font-size:1.05rem;font-weight:700;color:#fff;
+}
+.sidebar-logo-icon{
+  width:34px;height:34px;border-radius:8px;
+  background:var(--brand);display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;flex-shrink:0;
+}
+.sidebar-subtitle{font-size:.7rem;color:var(--txt-soft);margin-top:2px}
+.sidebar-user-card{
+  margin:12px 12px 0;padding:12px 14px;border-radius:var(--radius);
+  background:rgba(255,255,255,.06);
+  display:flex;align-items:center;gap:10px;
+}
+.sidebar-user-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--brand);display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0;
+}
+.sidebar-user-info .name{font-size:.82rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.sidebar-user-info .role-tag{font-size:.68rem;color:var(--txt-soft)}
+.sidebar-nav{padding:14px 10px;flex:1}
+.nav-section-label{
+  font-size:.62rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:#475569;padding:12px 10px 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:var(--radius);cursor:pointer;
+  font-size:.82rem;font-weight:500;color:var(--sidebar-txt);
+  transition:background .18s,color .18s;margin-bottom:2px;
+}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:var(--brand);color:#fff;font-weight:600}
+.nav-item .nav-icon{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+.sidebar-footer{
+  padding:12px;border-top:1px solid rgba(255,255,255,.07);
+}
+.logout-btn{
+  width:100%;display:flex;align-items:center;gap:8px;padding:9px 12px;
+  border:none;border-radius:var(--radius);cursor:pointer;
+  background:rgba(220,38,38,.15);color:#FCA5A5;font-size:.82rem;font-weight:600;
+  transition:background .18s;
+}
+.logout-btn:hover{background:rgba(220,38,38,.3)}
+
+/* ───── MAIN CONTENT ───── */
+.main{
+  flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;
+}
+.topbar{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:40;box-shadow:var(--shadow-sm);
+}
+.topbar-title{font-size:1.15rem;font-weight:700;color:var(--txt)}
+.topbar-breadcrumb{font-size:.75rem;color:var(--txt-soft);margin-top:1px}
+.page{padding:28px;flex:1;display:none}
+.page.active{display:block}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:1.4rem;font-weight:700;color:var(--txt)}
+.page-desc{font-size:.8rem;color:var(--txt-soft);margin-top:3px}
+
+/* ───── STATS GRID ───── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{
+  background:var(--card);border-radius:var(--radius-lg);padding:20px;
+  border:1px solid var(--border);box-shadow:var(--shadow-sm);
+  display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;width:4px;height:100%;
+  background:var(--brand);border-radius:4px 0 0 4px;
+}
+.stat-card.green::before{background:var(--success)}
+.stat-card.red::before{background:var(--danger)}
+.stat-card.amber::before{background:var(--accent)}
+.stat-label{font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--txt-soft)}
+.stat-value{font-size:1.8rem;font-weight:800;color:var(--txt);line-height:1}
+.stat-sub{font-size:.72rem;color:var(--txt-soft)}
+.stat-icon{position:absolute;top:16px;right:16px;font-size:1.6rem;opacity:.12}
+
+/* ───── CARDS ───── */
+.card{background:var(--card);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm);padding:22px}
+.card-title{font-size:.88rem;font-weight:700;color:var(--txt);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.card-title .cicon{font-size:1rem}
+
+/* ───── FORM ───── */
+.form-grid{display:grid;gap:16px}
+.form-2{grid-template-columns:1fr 1fr}
+.form-3{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.78rem;font-weight:600;color:var(--txt)}
+.field input,.field select,.field textarea{
+  padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:.85rem;color:var(--txt);background:var(--card);
+  transition:border-color .18s,box-shadow .18s;width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
+.field select[multiple]{height:auto}
+.field .hint{font-size:.7rem;color:var(--txt-soft);margin-top:-2px}
 .password-wrap{position:relative}
-.password-wrap input{padding-right:70px!important}
-.toggle-pass-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:#e9ecef;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;color:#333}
-.toggle-pass-btn:hover{background:#dee2e6}
+.password-wrap input{padding-right:72px!important}
+.toggle-pass-btn{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  background:#F1F5F9;border:none;padding:4px 10px;border-radius:6px;
+  cursor:pointer;font-size:.7rem;font-weight:700;color:var(--txt-soft);
+}
+.toggle-pass-btn:hover{background:#E2E8F0}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:500}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--brand);cursor:pointer}
+
+/* ───── BUTTONS ───── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;border:none;border-radius:var(--radius);
+  cursor:pointer;font-size:.82rem;font-weight:600;
+  transition:filter .18s,transform .1s,box-shadow .18s;white-space:nowrap;
+}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:hover:not(:disabled){filter:brightness(1.07)}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warning{background:var(--accent);color:#fff}
+.btn-ghost{background:#F1F5F9;color:var(--txt)}
+.btn-ghost:hover:not(:disabled){background:#E2E8F0}
+.btn-sm{padding:6px 12px;font-size:.75rem}
+.btn-lg{padding:13px 26px;font-size:.92rem}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ───── ALERTS / BANNERS ───── */
+.alert{padding:12px 14px;border-radius:var(--radius);font-size:.82rem;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px}
+.alert-icon{flex-shrink:0;font-size:1rem}
+.alert-success{background:#DCFCE7;color:#14532D;border:1px solid #BBF7D0}
+.alert-error  {background:#FEE2E2;color:#7F1D1D;border:1px solid #FECACA}
+.alert-warning{background:#FEF9C3;color:#713F12;border:1px solid #FDE68A}
+.alert-info   {background:#DBEAFE;color:#1E3A5F;border:1px solid #BFDBFE}
+.banner{
+  padding:12px 16px;border-radius:var(--radius);font-size:.82rem;
+  display:flex;align-items:center;gap:10px;margin-bottom:20px;
+}
+.banner-blue{background:var(--brand-light);color:var(--brand-dark);border:1px solid #93C5FD}
+.banner-amber{background:#FEF3C7;color:var(--accent-dark);border:1px solid #FDE68A}
+.banner-icon{font-size:1.1rem;flex-shrink:0}
+
+/* ───── STATUS CHIPS ───── */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-size:.7rem;font-weight:700}
+.chip-blue  {background:var(--brand-light);color:var(--brand-dark)}
+.chip-green {background:#DCFCE7;color:#14532D}
+.chip-red   {background:#FEE2E2;color:#7F1D1D}
+.chip-amber {background:#FEF9C3;color:#713F12}
+.chip-gray  {background:#F1F5F9;color:#475569}
+.chip-teal  {background:#CCFBF1;color:#134E4A}
+.chip-purple{background:#EDE9FE;color:#4C1D95}
+.chip-orange{background:#FFEDD5;color:#7C2D12}
+.chip-cyan  {background:#CFFAFE;color:#164E63}
+
+/* Role chips */
+.chip-GERENTE        {background:#EDE9FE;color:#4C1D95}
+.chip-ADMINISTRADOR  {background:#DBEAFE;color:#1E3A5F}
+.chip-CONTABILIDAD   {background:#CCFBF1;color:#134E4A}
+.chip-AUXILIAR_REPARTO{background:#FFEDD5;color:#7C2D12}
+.chip-TIENDA         {background:#DCFCE7;color:#14532D}
+.chip-CONDUCTOR      {background:#CFFAFE;color:#164E63}
+
+/* ───── TABLE ───── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border)}
+.data-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.data-table th{
+  background:#F8FAFC;padding:11px 14px;text-align:left;
+  font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--txt-soft);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.data-table td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--txt);white-space:nowrap}
+.data-table tbody tr:last-child td{border-bottom:none}
+.data-table tbody tr:hover{background:#F8FAFC}
+.data-table .money{font-variant-numeric:tabular-nums;font-weight:600}
+.data-table .pos{color:var(--success)}
+.data-table .neg{color:var(--danger)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--txt-soft);font-size:.82rem}
+.empty-state .empty-icon{font-size:2.2rem;margin-bottom:8px}
+
+/* ───── PAYROLL BREAKDOWN ───── */
+.payroll-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.payroll-table tr{border-bottom:1px solid var(--border)}
+.payroll-table td{padding:10px 14px}
+.payroll-table td:last-child{text-align:right;font-weight:600;white-space:nowrap}
+.payroll-table .section-row td{
+  font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--txt-soft);background:#F8FAFC;padding:7px 14px;
+}
+.payroll-table .total-row td{
+  font-size:1rem;font-weight:800;color:var(--brand);
+  border-top:2px solid var(--brand);background:var(--brand-light);
+  padding:14px;
+}
+.payroll-table .pos-val{color:var(--success)}
+.payroll-table .neg-val{color:var(--danger)}
+
+/* ───── CHECK-IN PAGE ───── */
+.clock-display{
+  text-align:center;padding:28px 20px 20px;
+  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);
+  border-radius:var(--radius-lg);color:#fff;margin-bottom:20px;
+}
+.clock-time{font-size:3rem;font-weight:800;font-family:monospace;letter-spacing:-.02em}
+.clock-date{font-size:.82rem;opacity:.8;margin-top:4px}
+.clock-location{margin-top:10px;display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.15);padding:5px 12px;border-radius:99px;font-size:.78rem}
+
+.verify-panel{
+  border-radius:var(--radius-lg);border:1.5px solid var(--border);
+  overflow:hidden;margin-bottom:16px;
+}
+.verify-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border);
+  flex-wrap:wrap;gap:10px;
+}
+.verify-title{font-size:.88rem;font-weight:700;display:flex;align-items:center;gap:7px}
+.verify-body{padding:16px 18px;background:#FAFBFC}
+.verify-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius);font-size:.82rem;font-weight:600;margin-top:10px}
+.vs-wait{background:#FEF9C3;color:var(--warn);border:1px solid #FDE68A}
+.vs-ok  {background:#DCFCE7;color:var(--success);border:1px solid #BBF7D0}
+.vs-fail{background:#FEE2E2;color:var(--danger);border:1px solid #FECACA}
+.vs-idle{background:var(--border);color:var(--txt-soft)}
+.face-video{width:100%;max-width:240px;border-radius:var(--radius);background:#000;display:block;margin:10px auto}
+.mark-buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+.mark-btn{
+  padding:18px;border:none;border-radius:var(--radius-lg);
+  cursor:pointer;font-size:.9rem;font-weight:700;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:filter .18s,transform .1s,box-shadow .18s;
+}
+.mark-btn:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:var(--shadow)}
+.mark-btn:active{transform:scale(.97)}
+.mark-btn-in {background:linear-gradient(135deg,#16A34A,#15803D);color:#fff}
+.mark-btn-out{background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff}
+.mark-btn-icon{font-size:1.8rem}
+.mark-btn-label{font-size:.7rem;font-weight:600;opacity:.9}
+.mark-btn:disabled{opacity:.45;cursor:not-allowed;filter:none;transform:none}
+
+/* ───── LOGIN PAGE ───── */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1E293B 0%,#1E40AF 100%);padding:20px;
+}
+.login-card{
+  background:var(--card);border-radius:var(--radius-lg);padding:40px 36px;
+  width:100%;max-width:380px;box-shadow:var(--shadow-lg);
+}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-logo-icon{
+  width:44px;height:44px;background:var(--brand);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+}
+.login-logo-text{font-size:1rem;font-weight:700;color:var(--txt)}
+.login-logo-sub{font-size:.72rem;color:var(--txt-soft)}
+.login-title{font-size:1.4rem;font-weight:800;color:var(--txt);margin-bottom:6px}
+.login-sub{font-size:.8rem;color:var(--txt-soft);margin-bottom:24px}
+.demo-box{
+  background:#F8FAFC;border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;margin-top:16px;font-size:.72rem;color:var(--txt-soft);
+}
+.demo-box strong{color:var(--txt)}
+
+/* ───── MODAL ───── */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);
+  z-index:200;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(2px);
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--card);border-radius:var(--radius-lg);
+  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+  box-shadow:var(--shadow-lg);
+}
+.modal-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 22px 16px;border-bottom:1px solid var(--border);
+}
+.modal-title{font-size:1rem;font-weight:700}
+.modal-close{
+  background:var(--border);border:none;border-radius:50%;
+  width:28px;height:28px;cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;color:var(--txt-soft);
+}
+.modal-body{padding:20px 22px}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ───── TABS ───── */
+.tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{
+  padding:9px 16px;background:none;border:none;cursor:pointer;
+  font-size:.8rem;font-weight:600;color:var(--txt-soft);
+  border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:color .18s,border-color .18s;
+}
+.tab-btn:hover{color:var(--brand)}
+.tab-btn.active{color:var(--brand);border-bottom-color:var(--brand)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ───── FILTERS ROW ───── */
+.filters-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;align-items:flex-end}
+.filters-row .field{min-width:180px;flex:1}
+
+/* ───── INCIDENT TOTAL CHIP ───── */
+.total-chip{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--brand-light);border:1px solid #93C5FD;
+  padding:10px 18px;border-radius:99px;font-size:.8rem;margin-bottom:14px;
+}
+.total-chip .amount{font-size:1.1rem;font-weight:800;color:var(--brand)}
+
+/* ───── FACE BOX (registro) ───── */
+.face-reg-box{
+  border:2px dashed var(--border);border-radius:var(--radius-lg);
+  padding:18px;margin-top:4px;
+}
+.face-reg-title{font-size:.8rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.face-reg-video{width:100%;max-width:220px;border-radius:var(--radius);background:#000;display:block;margin:8px auto}
+
+/* ───── PAYSLIP EXPORT BAR ───── */
+.export-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+
+/* ───── RESPONSIVE ───── */
 @media(max-width:768px){
-.content{flex-direction:column}
-.sidebar{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid #ddd}
-.nav-item{white-space:nowrap;margin-right:8px;margin-bottom:0}
-.form-row{grid-template-columns:1fr}
-.main{padding:18px}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .topbar{padding:12px 16px}
+  .page{padding:16px}
+  .mark-buttons{grid-template-columns:1fr}
+  .form-2,.form-3{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .mobile-menu-btn{display:flex!important}
+}
+.mobile-menu-btn{
+  display:none;background:none;border:none;cursor:pointer;
+  font-size:1.4rem;color:var(--txt);padding:4px;
+}
+
+/* ───── UTILITY ───── */
+.mt{margin-top:16px}.mt2{margin-top:8px}.mb{margin-bottom:16px}
+.flex{display:flex}.gap{gap:8px}.items-center{align-items:center}
+.text-sm{font-size:.75rem;color:var(--txt-soft)}
+.w-full{width:100%}
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0}
+.page-accent-bar{
+  height:4px;background:linear-gradient(90deg,var(--brand),var(--accent));
+  border-radius:2px;margin-bottom:20px;
 }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <h1>🚚 Distribuidora — Control de Asistencias</h1>
-    <div class="userbox" id="headerUserBox" style="display:none">
-      <div id="headerUserName"></div>
-      <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+
+<!-- ═══════════════════════════════════════
+     LOGIN  (se muestra cuando no hay sesión)
+     ═══════════════════════════════════════ -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">🚚</div>
+      <div>
+        <div class="login-logo-text" id="loginCompanyName">Mi Distribuidora</div>
+        <div class="login-logo-sub">Control de Asistencias</div>
+      </div>
     </div>
-  </div>
-
-  <div class="content">
-    <div class="sidebar" id="sidebar" style="display:none">
-      <div class="nav-item active" onclick="showScreen('dashboard')">📊 Dashboard</div>
-      <div class="nav-item" onclick="showScreen('checkin')">✅ Marcar Asistencia</div>
-      <div class="nav-item" onclick="showScreen('payroll')">💰 Mi Nómina</div>
-      <div class="nav-item" id="navMyLosses" style="display:none" onclick="showScreen('myLosses')">📦 Mis Productos Perdidos</div>
-      <div class="nav-item" id="navAdvances" style="display:none" onclick="showScreen('advances')">💵 Adelantos</div>
-      <div class="nav-item" id="navIncidents" style="display:none" onclick="showScreen('incidents')">📦 Incidencias</div>
-      <div class="nav-item" id="navDiscounts" style="display:none" onclick="showScreen('discounts')">🧾 Faltante de Liquidación</div>
-      <div class="nav-item" id="navUsers" style="display:none" onclick="showScreen('users')">👥 Usuarios</div>
-      <div class="nav-item" id="navPayrollAll" style="display:none" onclick="showScreen('payrollAll')">📈 Nómina General</div>
-      <div class="nav-item" id="navConfig" style="display:none" onclick="showScreen('config')">⚙️ Configuración</div>
-    </div>
-
-    <div class="main">
-
-      <!-- LOGIN -->
-      <div id="login" class="screen active">
-        <div style="max-width:380px;margin:40px auto;text-align:center">
-          <h2>Iniciar Sesión</h2>
-          <form onsubmit="event.preventDefault();login();return false;">
-            <div class="form-group" style="text-align:left"><label>Usuario</label><input id="loginUsername"></div>
-            <div class="form-group password-wrap" style="text-align:left">
-              <label>Contraseña</label>
-              <input type="password" id="loginPassword">
-              <button type="button" class="toggle-pass-btn" onclick="togglePasswordVisibility('loginPassword',this)">Ver</button>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%">Ingresar</button>
-          </form>
-          <p style="margin-top:16px;font-size:12px;color:#666;text-align:left">
-            <strong>Gerente:</strong> gerente / gerente123<br>
-            <strong>Administrador:</strong> admin / admin123<br>
-            <strong>Contabilidad:</strong> contable / contable123<br>
-            <strong>Auxiliar reparto:</strong> auxiliar / aux123<br>
-            <strong>Tienda:</strong> tienda / tienda123<br>
-            <strong>Conductor:</strong> conductor / conductor123
-          </p>
-          <p style="margin-top:10px;font-size:11px;color:#999;text-align:left">
-            ⚠️ Los usuarios de demo no tienen rostro registrado. El Gerente debe editarlos y capturar un rostro real antes de poder marcar asistencia.
-          </p>
+    <h1 class="login-title">Bienvenido</h1>
+    <p class="login-sub">Ingresa tus credenciales para continuar.</p>
+    <form onsubmit="event.preventDefault();login();return false;" class="form-grid">
+      <div class="field">
+        <label>Usuario</label>
+        <input id="loginUsername" placeholder="Tu nombre de usuario" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <div class="password-wrap">
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="toggle-pass-btn" onclick="togglePasswordVisibility('loginPassword',this)">Ver</button>
         </div>
       </div>
-
-      <!-- DASHBOARD -->
-      <div id="dashboard" class="screen">
-        <h2>Dashboard</h2>
-        <div id="dashAlert"></div>
-        <div class="info-banner" id="dashLocationBanner"></div>
-        <div class="stats-grid" id="dashStats"></div>
-        <div class="card">
-          <h3 style="color:#333;margin-bottom:10px;font-size:15px">Últimos movimientos</h3>
-          <table><thead><tr><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Ubicación</th></tr></thead><tbody id="dashLatest"></tbody></table>
-        </div>
-      </div>
-
-      <!-- CHECK IN/OUT -->
-      <div id="checkin" class="screen">
-        <h2>Marcar Asistencia</h2>
-        <div id="checkinAlert"></div>
-        <div class="info-banner" id="checkinLocationBanner"></div>
-        <div class="clock" id="clock">00:00:00</div>
-        <div id="clockDate" style="text-align:center;color:#666;margin-bottom:10px"></div>
-
-        <div class="geo-box">
-          <strong>📍 Verificación de ubicación</strong>
-          <p style="margin-top:6px;color:#666">Se verifica automáticamente al entrar a esta pantalla. Si cambiaste de lugar, puedes volver a verificar.</p>
-          <button class="btn btn-primary btn-small" onclick="verifyLocation()">🔄 Volver a verificar ubicación</button>
-          <div id="geoResult"></div>
-        </div>
-
-        <div class="geo-box">
-          <strong>🙂 Verificación facial</strong>
-          <p style="margin-top:6px;color:#666">La cámara se activa automáticamente y se intenta verificar tu rostro. Si no se reconoce, puedes intentarlo de nuevo con el botón.</p>
-          <video id="faceVideo" class="face-preview" autoplay muted playsinline style="display:none"></video>
-          <div style="text-align:center">
-            <button class="btn btn-primary btn-small" onclick="startFace()">🔄 Reactivar cámara</button>
-            <button class="btn btn-success btn-small" id="verifyFaceBtn" onclick="verifyFaceReal()">Verificar rostro ahora</button>
-          </div>
-          <div id="faceResult"></div>
-        </div>
-
-        <div style="display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap">
-          <button class="btn btn-success" style="padding:14px 26px" onclick="checkIn()">✅ Marcar Entrada</button>
-          <button class="btn btn-danger" style="padding:14px 26px" onclick="checkOut()">🚪 Marcar Salida</button>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#333;margin-bottom:10px;font-size:15px">Registros de hoy</h3>
-          <table><thead><tr><th>Hora</th><th>Tipo</th><th>Ubicación</th></tr></thead><tbody id="todayRecords"></tbody></table>
-        </div>
-      </div>
-
-      <!-- MI NÓMINA -->
-      <div id="payroll" class="screen">
-        <h2>Mi Nómina</h2>
-        <div class="form-group" style="max-width:220px">
-          <label>Mes</label>
-          <input type="month" id="payrollMonth" onchange="renderMyPayroll()">
-        </div>
-        <div class="export-bar">
-          <button class="btn btn-info btn-small" onclick="exportMyPayslipPDF()">📄 Exportar PDF</button>
-          <button class="btn btn-success btn-small" onclick="exportMyPayslipExcel()">📊 Exportar Excel</button>
-        </div>
-        <div id="payrollDetail"></div>
-      </div>
-
-      <!-- MIS PRODUCTOS PERDIDOS (solo Auxiliar de Reparto) -->
-      <div id="myLosses" class="screen">
-        <h2>Mis Productos Perdidos</h2>
-        <p class="hint" style="margin-bottom:14px">Historial de incidencias de productos perdidos registradas a tu nombre. Si un producto se perdió entre varios trabajadores, el monto ya viene dividido en partes iguales. Estas afectan tu bono de cero pérdidas y generan un descuento en tu nómina.</p>
-        <table><thead><tr><th>Fecha</th><th>Zona</th><th>Descripción</th><th>N° Planilla</th><th>Monto (tu parte)</th></tr></thead>
-        <tbody id="myLossesTable"></tbody></table>
-      </div>
-
-      <!-- ADELANTOS (solo Gerente) -->
-      <div id="advances" class="screen">
-        <h2>Adelantos de Sueldo</h2>
-        <div id="advancesAlert"></div>
-        <div class="card" style="margin-bottom:20px;max-width:440px">
-          <h3 style="font-size:14px;color:#333;margin-bottom:10px">Registrar adelanto</h3>
-          <div class="form-group"><label>Trabajador</label><select id="advUser"></select></div>
-          <div class="form-row">
-            <div class="form-group"><label>Monto (S/.)</label><input type="number" id="advAmount" min="1" step="0.01"></div>
-            <div class="form-group"><label>Fecha</label><input type="date" id="advDate"></div>
-          </div>
-          <div class="form-group"><label>Motivo</label>
-            <select id="advReason"><option value="A cuenta">A cuenta</option></select>
-          </div>
-          <button class="btn btn-primary" onclick="createAdvance()">Registrar adelanto</button>
-        </div>
-        <div class="form-group" style="max-width:280px">
-          <label>Filtrar por trabajador</label>
-          <select id="advFilterUser" onchange="renderAdvances()"><option value="">Todos</option></select>
-        </div>
-        <table><thead><tr><th>Trabajador</th><th>Fecha</th><th>Monto</th><th>Motivo</th><th>Acción</th></tr></thead>
-        <tbody id="advancesTable"></tbody></table>
-      </div>
-
-      <!-- INCIDENCIAS (productos perdidos) -->
-      <div id="incidents" class="screen">
-        <h2>Incidencias — Productos Perdidos</h2>
-        <div id="incidentsAlert"></div>
-        <div class="card" style="margin-bottom:20px;max-width:460px">
-          <h3 style="font-size:14px;color:#333;margin-bottom:10px">Registrar incidencia</h3>
-          <div class="form-group"><label>Trabajador(es) responsables (Auxiliar de reparto / Administrador)</label>
-            <select id="incUser" multiple size="4"></select>
-          </div>
-          <p class="hint" style="margin-top:-10px">Mantén presionado Ctrl (⌘ en Mac) para seleccionar varios trabajadores. El monto se dividirá en partes iguales entre todos los seleccionados.</p>
-          <div class="form-group"><label>Zona donde se perdió</label>
-            <select id="incZone"></select>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Fecha</label><input type="date" id="incDate"></div>
-            <div class="form-group"><label>Monto total S/.</label><input type="number" id="incAmount" min="0" step="0.01"></div>
-          </div>
-          <div class="form-group"><label>N° de planilla</label><input type="text" id="incPlanilla" placeholder="Ej: PL-00123"></div>
-          <div class="form-group"><label>Descripción</label><input type="text" id="incDesc" placeholder="Producto y detalle"></div>
-          <button class="btn btn-primary" onclick="createIncident()">Registrar</button>
-        </div>
-        <div class="filters-row">
-          <div class="form-group">
-            <label>Filtrar por trabajador</label>
-            <select id="incFilterUser" onchange="renderIncidents()"><option value="">Todos</option></select>
-          </div>
-          <div class="form-group">
-            <label>Filtrar por zona</label>
-            <select id="incFilterZone" onchange="renderIncidents()"><option value="">Todas</option></select>
-          </div>
-        </div>
-        <div class="card" style="max-width:320px;margin-bottom:10px">
-          <h3 style="font-size:12px;color:#667eea;text-transform:uppercase">Total incidencias (filtro actual)</h3>
-          <div style="font-size:26px;font-weight:bold;color:#333" id="incidentsTotal">S/. 0.00</div>
-        </div>
-        <table><thead><tr><th>Trabajador</th><th>Fecha</th><th>Zona</th><th>Descripción</th><th>N° Planilla</th><th>Monto</th><th>Acción</th></tr></thead>
-        <tbody id="incidentsTable"></tbody></table>
-      </div>
-
-      <!-- FALTANTE DE LIQUIDACIÓN (solo Conductor) -->
-      <div id="discounts" class="screen">
-        <h2>Faltante de Liquidación</h2>
-        <p class="hint" style="margin-bottom:14px">Descuento aplicable únicamente a Conductores por diferencias en la liquidación de efectivo/mercadería de su ruta.</p>
-        <div id="discountsAlert"></div>
-        <div class="card" style="margin-bottom:20px;max-width:460px">
-          <h3 style="font-size:14px;color:#333;margin-bottom:10px">Registrar faltante</h3>
-          <div class="form-group"><label>Conductor</label>
-            <select id="discUser"></select>
-          </div>
-          <div class="form-group"><label>Zona</label>
-            <select id="discZone"></select>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Fecha</label><input type="date" id="discDate"></div>
-            <div class="form-group"><label>Monto S/.</label><input type="number" id="discAmount" min="0" step="0.01"></div>
-          </div>
-          <div class="form-group"><label>N° de planilla</label><input type="text" id="discPlanilla" placeholder="Ej: PL-00123"></div>
-          <button class="btn btn-primary" onclick="createDiscount()">Registrar faltante</button>
-        </div>
-        <div class="form-group" style="max-width:280px">
-          <label>Filtrar por conductor</label>
-          <select id="discFilterUser" onchange="renderDiscounts()"><option value="">Todos</option></select>
-        </div>
-        <table><thead><tr><th>Conductor</th><th>Fecha</th><th>Zona</th><th>N° Planilla</th><th>Monto</th><th>Acción</th></tr></thead>
-        <tbody id="discountsTable"></tbody></table>
-      </div>
-
-      <!-- USUARIOS (solo Gerente) -->
-      <div id="users" class="screen">
-        <h2>Gestión de Usuarios</h2>
-        <div id="usersAlert"></div>
-        <button class="btn btn-primary" style="margin-bottom:16px" onclick="openUserModal()">➕ Crear Usuario</button>
-        <div class="search-box"><input id="searchUsers" placeholder="Buscar..." onkeyup="filterUsers()"></div>
-        <div class="table-scroll">
-        <table><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Ubicación</th><th>Horario</th><th>Sueldo Base</th><th>AFP</th><th>Rostro</th><th>Estado</th><th>Acción</th></tr></thead>
-        <tbody id="usersTable"></tbody></table>
-        </div>
-      </div>
-
-      <!-- NÓMINA GENERAL (solo Gerente) -->
-      <div id="payrollAll" class="screen">
-        <h2>Nómina General</h2>
-        <div class="form-group" style="max-width:220px">
-          <label>Mes</label>
-          <input type="month" id="payrollAllMonth" onchange="renderPayrollAll()">
-        </div>
-        <div class="export-bar">
-          <button class="btn btn-info btn-small" onclick="exportAllPayslipsPDF()">📄 Exportar todos a PDF</button>
-          <button class="btn btn-success btn-small" onclick="exportAllPayslipsExcel()">📊 Exportar todos a Excel</button>
-        </div>
-        <div class="table-scroll">
-        <table>
-          <thead><tr>
-            <th>Usuario</th><th>Rol</th><th>Sueldo Base</th>
-            <th>Pago H.Extra</th><th>Bono Asistencia</th><th>Bono Cero Pérdidas</th>
-            <th>Desc. Productos</th><th>Desc. Tardanza</th><th>Desc. Faltas</th><th>Desc. AFP</th>
-            <th>Desc. Liquidación</th><th>Adelantos</th>
-            <th>Total</th><th>Boleta</th>
-          </tr></thead>
-          <tbody id="payrollAllTable"></tbody>
-        </table>
-        </div>
-      </div>
-
-      <!-- CONFIGURACIÓN (solo Gerente) -->
-      <div id="config" class="screen">
-        <h2>Configuración del Sistema</h2>
-        <div id="configAlert"></div>
-        <div class="tabs">
-          <button class="tab-btn active" onclick="switchConfigTab(event,'tabEmpresa')">🏢 Empresa</button>
-          <button class="tab-btn" onclick="switchConfigTab(event,'tabLoc')">📍 Ubicaciones</button>
-          <button class="tab-btn" onclick="switchConfigTab(event,'tabZones')">🗺️ Zonas</button>
-          <button class="tab-btn" onclick="switchConfigTab(event,'tabSchedule')">🕐 Horarios por Rol</button>
-          <button class="tab-btn" onclick="switchConfigTab(event,'tabRates')">💰 Bonos y Descuentos</button>
-        </div>
-
-        <div id="tabEmpresa" class="tab-content active">
-          <p class="hint" style="margin-bottom:14px">Estos datos aparecen en el encabezado de las boletas de pago exportadas en PDF y Excel.</p>
-          <div class="form-group" style="max-width:400px"><label>Nombre de la empresa</label><input id="cfgCompanyName" placeholder="Ej: Distribuidora Los Andes S.A.C."></div>
-          <div class="form-group" style="max-width:180px"><label>Iniciales para el logo (2-4 letras)</label><input id="cfgCompanyLogo" maxlength="4" placeholder="Ej: DLA"></div>
-          <button class="btn btn-success" onclick="saveCompanyConfig()">Guardar datos de la empresa</button>
-        </div>
-
-        <div id="tabLoc" class="tab-content">
-          <table style="margin-bottom:20px">
-            <thead><tr><th>Nombre</th><th>Latitud</th><th>Longitud</th><th>Radio (m)</th><th>Acción</th></tr></thead>
-            <tbody id="locationsTable"></tbody>
-          </table>
-          <div class="card" style="max-width:460px">
-            <h3 id="locFormTitle" style="font-size:14px;color:#333;margin-bottom:10px">Agregar ubicación</h3>
-            <div class="form-group"><label>Nombre (Ej: Almacén Central, Tienda Norte)</label><input id="locName"></div>
-            <div class="form-row">
-              <div class="form-group"><label>Latitud</label><input type="number" step="0.000001" id="locLat"></div>
-              <div class="form-group"><label>Longitud</label><input type="number" step="0.000001" id="locLng"></div>
-            </div>
-            <div class="form-group" style="max-width:220px"><label>Radio permitido (metros)</label><input type="number" id="locRadius" min="10" value="150"></div>
-            <button class="btn btn-primary btn-small" onclick="useMyLocationForForm()">📌 Usar mi ubicación actual</button>
-            <div style="margin-top:14px;display:flex;gap:8px">
-              <button class="btn btn-success" style="flex:1" onclick="saveLocation()">💾 Guardar ubicación</button>
-              <button class="btn btn-danger" style="flex:1;display:none" id="locCancelBtn" onclick="cancelLocationEdit()">Cancelar</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="tabZones" class="tab-content">
-          <p class="hint" style="margin-bottom:14px">Registra una sola vez el nombre de cada zona de reparto/venta. Luego podrás seleccionarla desde una lista al registrar incidencias y faltantes.</p>
-          <table style="margin-bottom:20px">
-            <thead><tr><th>Nombre de zona</th><th>Acción</th></tr></thead>
-            <tbody id="zonesTable"></tbody>
-          </table>
-          <div class="card" style="max-width:400px">
-            <h3 id="zoneFormTitle" style="font-size:14px;color:#333;margin-bottom:10px">Agregar zona</h3>
-            <div class="form-group"><label>Nombre de la zona</label><input id="zoneName" placeholder="Ej: Zona Norte, Ruta 3"></div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-success" style="flex:1" onclick="saveZone()">💾 Guardar zona</button>
-              <button class="btn btn-danger" style="flex:1;display:none" id="zoneCancelBtn" onclick="cancelZoneEdit()">Cancelar</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="tabSchedule" class="tab-content">
-          <p class="hint" style="margin-bottom:14px">Define el horario base de cada rol. Las horas extra se cuentan a partir de la "Hora de salida" configurada aquí. Al crear/editar un trabajador puedes asignarle una hora de inicio personalizada.</p>
-          <div class="table-scroll">
-          <table>
-            <thead><tr><th>Rol</th><th>Hora inicio</th><th>Hora salida</th><th>Tolerancia (min)</th><th>Jornada estándar (min)</th><th>Refrigerio (min)</th></tr></thead>
-            <tbody id="scheduleTable"></tbody>
-          </table>
-          </div>
-          <button class="btn btn-success" style="margin-top:16px" onclick="saveSchedules()">Guardar horarios</button>
-        </div>
-
-        <div id="tabRates" class="tab-content">
-          <div class="form-row">
-            <div class="form-group"><label>Bono asistencia perfecta (S/.) — no aplica a Contabilidad</label><input type="number" id="cfgBonoAsistencia" step="0.01"></div>
-            <div class="form-group"><label>Bono cero pérdidas — solo Auxiliar de Reparto (S/.)</label><input type="number" id="cfgBonoCeroPerdidas" step="0.01"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Descuento por minuto de tardanza (S/.)</label><input type="number" id="cfgTarifaTardanza" step="0.01"></div>
-            <div class="form-group"><label>Descuento por falta injustificada (S/.)</label><input type="number" id="cfgMontoFalta" step="0.01"></div>
-          </div>
-          <div class="form-group" style="max-width:280px">
-            <label>Monto AFP (S/. — descuento fijo establecido)</label><input type="number" id="cfgAfpAmount" step="0.01">
-          </div>
-          <div class="card">
-            <strong>Fórmula de horas extra (fija, no editable)</strong>
-            <p class="hint" style="margin-top:8px;margin-bottom:0">
-              Valor por minuto extra = Sueldo base ÷ 30 ÷ 10 ÷ 60. Ese valor se multiplica por los minutos extra netos del trabajador (minutos trabajados después de su hora de salida, menos minutos de tardanza acumulados en el mes).
-            </p>
-          </div>
-          <button class="btn btn-success" style="margin-top:16px" onclick="saveRatesConfig()">Guardar configuración</button>
-        </div>
-      </div>
-
+      <button type="submit" class="btn btn-primary btn-lg w-full">Ingresar →</button>
+    </form>
+    <div class="demo-box">
+      <strong>Accesos de demo</strong><br>
+      gerente / gerente123 &nbsp;|&nbsp; admin / admin123<br>
+      contable / contable123 &nbsp;|&nbsp; auxiliar / aux123<br>
+      tienda / tienda123 &nbsp;|&nbsp; conductor / conductor123<br>
+      <span style="color:#94A3B8;margin-top:4px;display:block">⚠️ Los usuarios demo no tienen rostro registrado — el Gerente debe captarlos antes de que puedan marcar.</span>
     </div>
   </div>
 </div>
 
-<!-- MODAL USUARIO -->
-<div id="userModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header"><span id="userModalTitle">Crear Usuario</span><button class="modal-close" onclick="closeUserModal()">×</button></div>
-    <div id="userModalAlert"></div>
-    <form onsubmit="saveUser(event)">
-      <div class="form-group"><label>Usuario</label><input id="fUsername" required></div>
-      <div class="form-group password-wrap">
-        <label>Contraseña</label>
-        <input type="password" id="fPassword" placeholder="Dejar en blanco para no cambiar">
-        <button type="button" class="toggle-pass-btn" onclick="togglePasswordVisibility('fPassword',this)">Ver</button>
-      </div>
-      <div class="form-group"><label>Nombre completo</label><input id="fName" required></div>
-      <div class="form-group"><label>Rol</label>
-        <select id="fRole" required onchange="updateScheduleHint()">
-          <option value="">Selecciona...</option>
-          <option value="GERENTE">Gerente</option>
-          <option value="ADMINISTRADOR">Administrador</option>
-          <option value="CONTABILIDAD">Contabilidad</option>
-          <option value="AUXILIAR_REPARTO">Auxiliar de Reparto</option>
-          <option value="TIENDA">Tienda</option>
-          <option value="CONDUCTOR">Conductor</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Localización asignada</label>
-        <select id="fLocation"><option value="">Sin asignar</option></select>
-      </div>
-      <div class="form-group"><label>Sueldo base mensual (S/.)</label><input type="number" id="fSalary" step="0.01" min="0" required></div>
-      <div class="form-group"><label>Hora de inicio personalizada (opcional)</label><input type="time" id="fCustomStart"></div>
-      <div class="hint" id="scheduleHint">Selecciona un rol para ver su horario por defecto.</div>
-      <div class="form-group"><label><input type="checkbox" id="fAfpApplies" checked> Se le descuenta AFP</label></div>
-      <div class="form-group"><label><input type="checkbox" id="fActive" checked> Usuario activo</label></div>
+<!-- ═══════════════════════════════════════
+     APP SHELL  (se muestra tras el login)
+     ═══════════════════════════════════════ -->
+<div class="app" id="appShell" style="display:none">
 
-      <div class="geo-box">
-        <strong>🙂 Registro facial <span id="faceRequiredMark" style="color:#dc3545">(requerido)</span></strong>
-        <p style="margin-top:6px;color:#666">Captura el rostro del trabajador con la cámara. Se usará para validar su identidad cada vez que marque asistencia.</p>
-        <video id="regFaceVideo" class="face-preview" autoplay muted playsinline style="display:none"></video>
-        <div style="text-align:center">
-          <button class="btn btn-primary btn-small" type="button" onclick="startRegFace()">Activar cámara</button>
-          <button class="btn btn-success btn-small" type="button" onclick="captureRegFace()">Capturar rostro</button>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">🚚</div>
+        <div>
+          <div id="sideCompanyName">Distribuidora</div>
+          <div class="sidebar-subtitle">Panel de control</div>
         </div>
-        <div id="regFaceStatus"></div>
+      </div>
+    </div>
+    <div class="sidebar-user-card">
+      <div class="sidebar-user-avatar" id="sideUserAvatar">?</div>
+      <div class="sidebar-user-info">
+        <div class="name" id="sideUserName">–</div>
+        <div class="role-tag" id="sideUserRole">–</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+      <div class="nav-item active" onclick="showScreen('dashboard')">
+        <span class="nav-icon">📊</span>Mi resumen
+      </div>
+      <div class="nav-item" onclick="showScreen('checkin')">
+        <span class="nav-icon">✅</span>Marcar asistencia
+      </div>
+      <div class="nav-item" onclick="showScreen('payroll')">
+        <span class="nav-icon">💰</span>Mi nómina
+      </div>
+      <div class="nav-item" id="navMyLosses" style="display:none" onclick="showScreen('myLosses')">
+        <span class="nav-icon">📦</span>Mis productos perdidos
       </div>
 
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-success" style="flex:1" type="submit">💾 Guardar</button>
-        <button class="btn btn-danger" style="flex:1" type="button" id="fDeleteBtn" onclick="deleteUser()">🗑️ Eliminar</button>
+      <div class="nav-section-label" id="navMgmtLabel" style="display:none">Gestión</div>
+      <div class="nav-item" id="navAdvances" style="display:none" onclick="showScreen('advances')">
+        <span class="nav-icon">💵</span>Adelantos
       </div>
-    </form>
+      <div class="nav-item" id="navIncidents" style="display:none" onclick="showScreen('incidents')">
+        <span class="nav-icon">📦</span>Incidencias
+      </div>
+      <div class="nav-item" id="navDiscounts" style="display:none" onclick="showScreen('discounts')">
+        <span class="nav-icon">🧾</span>Faltante de liquidación
+      </div>
+      <div class="nav-item" id="navUsers" style="display:none" onclick="showScreen('users')">
+        <span class="nav-icon">👥</span>Trabajadores
+      </div>
+      <div class="nav-item" id="navPayrollAll" style="display:none" onclick="showScreen('payrollAll')">
+        <span class="nav-icon">📈</span>Nómina general
+      </div>
+      <div class="nav-item" id="navConfig" style="display:none" onclick="showScreen('config')">
+        <span class="nav-icon">⚙️</span>Configuración
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="logout()">
+        <span>🚪</span> Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+      </div>
+      <div style="flex:1;padding:0 16px">
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        <div class="topbar-breadcrumb" id="topbarSub">Bienvenido de vuelta</div>
+      </div>
+      <div id="topbarUser" style="font-size:.78rem;color:var(--txt-soft);text-align:right"></div>
+    </header>
+
+    <!-- ── DASHBOARD ── -->
+    <section id="dashboard" class="page active">
+      <div class="page-accent-bar"></div>
+      <div id="dashBanner"></div>
+      <div class="stats-grid" id="dashStats"></div>
+      <div class="card">
+        <div class="card-title"><span class="cicon">🕐</span>Últimos movimientos</div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Acción</th><th>Ubicación</th></tr></thead>
+            <tbody id="dashLatest"><tr><td colspan="4" class="empty-state"><div class="empty-icon">📋</div>Sin registros aún</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── MARCAR ASISTENCIA ── -->
+    <section id="checkin" class="page">
+      <div id="checkinAlert"></div>
+      <div class="clock-display" id="clockDisplay">
+        <div class="clock-time" id="clock">00:00:00</div>
+        <div class="clock-date" id="clockDate"></div>
+        <div class="clock-location" id="clockLocationBanner">📍 Cargando ubicación asignada…</div>
+      </div>
+
+      <!-- Verificación GPS -->
+      <div class="verify-panel">
+        <div class="verify-header">
+          <div class="verify-title">📍 Verificación de ubicación</div>
+          <button class="btn btn-ghost btn-sm" onclick="verifyLocation()">🔄 Volver a verificar</button>
+        </div>
+        <div class="verify-body">
+          <p class="text-sm">Tu GPS se verifica automáticamente al entrar. Debes estar dentro del rango de una ubicación autorizada.</p>
+          <div id="geoResult"><div class="verify-status vs-idle">⏳ Verificando…</div></div>
+        </div>
+      </div>
+
+      <!-- Verificación facial -->
+      <div class="verify-panel">
+        <div class="verify-header">
+          <div class="verify-title">🙂 Verificación facial</div>
+          <div class="btn-group">
+            <button class="btn btn-ghost btn-sm" onclick="startFace()">🔄 Reactivar cámara</button>
+            <button class="btn btn-primary btn-sm" id="verifyFaceBtn" onclick="verifyFaceReal()">Verificar ahora</button>
+          </div>
+        </div>
+        <div class="verify-body">
+          <p class="text-sm">La cámara se activa sola. Si no reconoce tu rostro, inténtalo de nuevo con buena iluminación y mirando directo a la cámara.</p>
+          <video id="faceVideo" class="face-video" autoplay muted playsinline style="display:none"></video>
+          <div id="faceResult"><div class="verify-status vs-idle">Activa la cámara para comenzar</div></div>
+        </div>
+      </div>
+
+      <!-- Botones de marcar -->
+      <div class="mark-buttons">
+        <button class="mark-btn mark-btn-in" onclick="checkIn()">
+          <span class="mark-btn-icon">☀️</span>
+          <span>Marcar Entrada</span>
+          <span class="mark-btn-label">Inicio de jornada</span>
+        </button>
+        <button class="mark-btn mark-btn-out" onclick="checkOut()">
+          <span class="mark-btn-icon">🌙</span>
+          <span>Marcar Salida</span>
+          <span class="mark-btn-label">Fin de jornada</span>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cicon">📋</span>Registros de hoy</div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Hora</th><th>Acción</th><th>Ubicación</th></tr></thead>
+            <tbody id="todayRecords"><tr><td colspan="3" class="empty-state"><div class="empty-icon">⏰</div>Aún no hay registros hoy</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── MI NÓMINA ── -->
+    <section id="payroll" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Mi Nómina</div>
+          <div class="page-desc">Detalle de haberes y descuentos del mes seleccionado</div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-ghost btn-sm" onclick="exportMyPayslipPDF()">📄 PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportMyPayslipExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <div class="field" style="max-width:220px;margin-bottom:20px">
+        <label>Selecciona el mes</label>
+        <input type="month" id="payrollMonth" onchange="renderMyPayroll()">
+      </div>
+      <div id="payrollDetail"></div>
+    </section>
+
+    <!-- ── MIS PRODUCTOS PERDIDOS ── -->
+    <section id="myLosses" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Mis Productos Perdidos</div>
+          <div class="page-desc">Incidencias registradas a tu nombre. El monto ya viene dividido si la pérdida fue compartida.</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Fecha</th><th>Zona</th><th>Descripción</th><th>N° Planilla</th><th>Tu parte</th></tr></thead>
+          <tbody id="myLossesTable"><tr><td colspan="5" class="empty-state"><div class="empty-icon">📦</div>Sin incidencias registradas</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── ADELANTOS ── -->
+    <section id="advances" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Adelantos de sueldo</div>
+          <div class="page-desc">Solo el Gerente puede registrar adelantos. Motivo fijo: "A cuenta".</div>
+        </div>
+      </div>
+      <div id="advancesAlert"></div>
+      <div class="card mb">
+        <div class="card-title"><span class="cicon">➕</span>Registrar adelanto</div>
+        <div class="form-grid form-2">
+          <div class="field"><label>Trabajador</label><select id="advUser"></select></div>
+          <div class="field"><label>Motivo</label><select id="advReason"><option value="A cuenta">A cuenta</option></select></div>
+          <div class="field"><label>Monto (S/.)</label><input type="number" id="advAmount" min="1" step="0.01" placeholder="0.00"></div>
+          <div class="field"><label>Fecha</label><input type="date" id="advDate"></div>
+        </div>
+        <button class="btn btn-primary mt" onclick="createAdvance()">Registrar adelanto</button>
+      </div>
+      <div class="field" style="max-width:260px;margin-bottom:14px">
+        <label>Filtrar por trabajador</label>
+        <select id="advFilterUser" onchange="renderAdvances()"><option value="">Todos</option></select>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Trabajador</th><th>Fecha</th><th>Monto</th><th>Motivo</th><th>Acciones</th></tr></thead>
+          <tbody id="advancesTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── INCIDENCIAS ── -->
+    <section id="incidents" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Incidencias — Productos Perdidos</div>
+          <div class="page-desc">Puedes seleccionar varios trabajadores: el monto se divide en partes iguales entre ellos.</div>
+        </div>
+      </div>
+      <div id="incidentsAlert"></div>
+      <div class="card mb">
+        <div class="card-title"><span class="cicon">➕</span>Registrar incidencia</div>
+        <div class="form-grid form-2">
+          <div class="field" style="grid-column:1/-1">
+            <label>Trabajador(es) responsables <span style="font-weight:400;color:var(--txt-soft)">(Ctrl+clic para seleccionar varios)</span></label>
+            <select id="incUser" multiple size="4"></select>
+          </div>
+          <div class="field"><label>Zona donde se perdió</label><select id="incZone"></select></div>
+          <div class="field"><label>Fecha</label><input type="date" id="incDate"></div>
+          <div class="field"><label>Monto total S/.</label><input type="number" id="incAmount" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="field"><label>N° de planilla</label><input type="text" id="incPlanilla" placeholder="PL-00123"></div>
+          <div class="field" style="grid-column:1/-1"><label>Descripción del producto</label><input type="text" id="incDesc" placeholder="Ej: 3 cajas de aceite, ruta norte"></div>
+        </div>
+        <button class="btn btn-primary mt" onclick="createIncident()">Registrar incidencia</button>
+      </div>
+      <div class="filters-row">
+        <div class="field"><label>Filtrar por trabajador</label><select id="incFilterUser" onchange="renderIncidents()"><option value="">Todos</option></select></div>
+        <div class="field"><label>Filtrar por zona</label><select id="incFilterZone" onchange="renderIncidents()"><option value="">Todas</option></select></div>
+      </div>
+      <div class="total-chip">
+        📊 Total filtrado: <span class="amount" id="incidentsTotal">S/. 0.00</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Trabajador</th><th>Fecha</th><th>Zona</th><th>Descripción</th><th>N° Planilla</th><th>Monto</th><th></th></tr></thead>
+          <tbody id="incidentsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── FALTANTE DE LIQUIDACIÓN ── -->
+    <section id="discounts" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Faltante de Liquidación</div>
+          <div class="page-desc">Descuento exclusivo para Conductores por diferencias de efectivo o mercadería al liquidar su ruta.</div>
+        </div>
+      </div>
+      <div id="discountsAlert"></div>
+      <div class="card mb">
+        <div class="card-title"><span class="cicon">➕</span>Registrar faltante</div>
+        <div class="form-grid form-2">
+          <div class="field"><label>Conductor</label><select id="discUser"></select></div>
+          <div class="field"><label>Zona</label><select id="discZone"></select></div>
+          <div class="field"><label>Monto S/.</label><input type="number" id="discAmount" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="field"><label>Fecha</label><input type="date" id="discDate"></div>
+          <div class="field" style="grid-column:1/-1"><label>N° de planilla</label><input type="text" id="discPlanilla" placeholder="PL-00123"></div>
+        </div>
+        <button class="btn btn-primary mt" onclick="createDiscount()">Registrar faltante</button>
+      </div>
+      <div class="field" style="max-width:260px;margin-bottom:14px">
+        <label>Filtrar por conductor</label>
+        <select id="discFilterUser" onchange="renderDiscounts()"><option value="">Todos</option></select>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Conductor</th><th>Fecha</th><th>Zona</th><th>N° Planilla</th><th>Monto</th><th></th></tr></thead>
+          <tbody id="discountsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── TRABAJADORES ── -->
+    <section id="users" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Trabajadores</div>
+          <div class="page-desc">Crea y gestiona todos los usuarios del sistema</div>
+        </div>
+        <button class="btn btn-primary" onclick="openUserModal()">➕ Nuevo trabajador</button>
+      </div>
+      <div id="usersAlert"></div>
+      <div class="field" style="max-width:280px;margin-bottom:16px">
+        <input id="searchUsers" placeholder="🔍 Buscar por nombre o usuario…" onkeyup="filterUsers()">
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Ubicación asignada</th><th>Horario</th><th>Sueldo base</th><th>AFP</th><th>Rostro</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="usersTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── NÓMINA GENERAL ── -->
+    <section id="payrollAll" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Nómina General</div>
+          <div class="page-desc">Resumen de haberes y descuentos de todos los trabajadores</div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-ghost btn-sm" onclick="exportAllPayslipsPDF()">📄 PDF general</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportAllPayslipsExcel()">📊 Excel general</button>
+        </div>
+      </div>
+      <div class="field" style="max-width:220px;margin-bottom:20px">
+        <label>Mes</label>
+        <input type="month" id="payrollAllMonth" onchange="renderPayrollAll()">
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Trabajador</th><th>Rol</th><th>Sueldo Base</th>
+              <th>H. Extra</th><th>Bono Asistencia</th><th>Bono 0 Pérdidas</th>
+              <th>Desc. Productos</th><th>Desc. Tardanza</th><th>Desc. Faltas</th>
+              <th>Desc. AFP</th><th>Desc. Liquidación</th><th>Adelantos</th>
+              <th>Total a pagar</th><th>Boleta</th>
+            </tr>
+          </thead>
+          <tbody id="payrollAllTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── CONFIGURACIÓN ── -->
+    <section id="config" class="page">
+      <div class="page-title" style="margin-bottom:20px">Configuración del sistema</div>
+      <div id="configAlert"></div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchConfigTab(event,'cfgEmpresa')">🏢 Empresa</button>
+        <button class="tab-btn" onclick="switchConfigTab(event,'cfgLoc')">📍 Ubicaciones</button>
+        <button class="tab-btn" onclick="switchConfigTab(event,'cfgZones')">🗺️ Zonas</button>
+        <button class="tab-btn" onclick="switchConfigTab(event,'cfgSched')">🕐 Horarios</button>
+        <button class="tab-btn" onclick="switchConfigTab(event,'cfgRates')">💰 Bonos y Descuentos</button>
+      </div>
+
+      <!-- Empresa -->
+      <div id="cfgEmpresa" class="tab-panel active">
+        <div class="card" style="max-width:440px">
+          <div class="card-title">Datos de la empresa</div>
+          <p class="text-sm mb">Aparecen en el encabezado de todas las boletas de pago.</p>
+          <div class="form-grid">
+            <div class="field"><label>Nombre de la empresa</label><input id="cfgCompanyName" placeholder="Ej: Distribuidora Los Andes S.A.C."></div>
+            <div class="field"><label>Iniciales para logo (2-4 letras)</label><input id="cfgCompanyLogo" maxlength="4" placeholder="Ej: DLA"></div>
+          </div>
+          <button class="btn btn-primary mt" onclick="saveCompanyConfig()">Guardar</button>
+        </div>
+      </div>
+
+      <!-- Ubicaciones -->
+      <div id="cfgLoc" class="tab-panel">
+        <div class="table-wrap mb">
+          <table class="data-table"><thead><tr><th>Nombre</th><th>Latitud</th><th>Longitud</th><th>Radio (m)</th><th>Acciones</th></tr></thead>
+          <tbody id="locationsTable"></tbody></table>
+        </div>
+        <div class="card" style="max-width:460px">
+          <div class="card-title" id="locFormTitle">Agregar ubicación</div>
+          <div class="form-grid form-2">
+            <div class="field" style="grid-column:1/-1"><label>Nombre</label><input id="locName" placeholder="Ej: Almacén Central, Tienda Norte"></div>
+            <div class="field"><label>Latitud</label><input type="number" step="0.000001" id="locLat"></div>
+            <div class="field"><label>Longitud</label><input type="number" step="0.000001" id="locLng"></div>
+            <div class="field"><label>Radio (metros)</label><input type="number" id="locRadius" min="10" value="150"></div>
+          </div>
+          <div class="btn-group mt">
+            <button class="btn btn-ghost btn-sm" onclick="useMyLocationForForm()">📌 Usar mi ubicación</button>
+            <button class="btn btn-primary" onclick="saveLocation()">Guardar</button>
+            <button class="btn btn-danger" style="display:none" id="locCancelBtn" onclick="cancelLocationEdit()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zonas -->
+      <div id="cfgZones" class="tab-panel">
+        <p class="text-sm mb">Registra cada zona una sola vez para poder seleccionarla en incidencias y faltantes.</p>
+        <div class="table-wrap mb">
+          <table class="data-table"><thead><tr><th>Zona</th><th>Acciones</th></tr></thead>
+          <tbody id="zonesTable"></tbody></table>
+        </div>
+        <div class="card" style="max-width:380px">
+          <div class="card-title" id="zoneFormTitle">Agregar zona</div>
+          <div class="field"><label>Nombre</label><input id="zoneName" placeholder="Ej: Zona Norte, Ruta 3"></div>
+          <div class="btn-group mt">
+            <button class="btn btn-primary" onclick="saveZone()">Guardar</button>
+            <button class="btn btn-danger" style="display:none" id="zoneCancelBtn" onclick="cancelZoneEdit()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horarios -->
+      <div id="cfgSched" class="tab-panel">
+        <p class="text-sm mb">Las horas extra se calculan a partir de la "Hora de salida". Puedes personalizar la hora de inicio también para cada trabajador en su ficha.</p>
+        <div class="table-wrap mb">
+          <table class="data-table">
+            <thead><tr><th>Rol</th><th>Hora de inicio</th><th>Hora de salida</th><th>Tolerancia (min)</th><th>Jornada estándar (min)</th><th>Refrigerio (min)</th></tr></thead>
+            <tbody id="scheduleTable"></tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary" onclick="saveSchedules()">Guardar horarios</button>
+      </div>
+
+      <!-- Bonos y descuentos -->
+      <div id="cfgRates" class="tab-panel">
+        <div class="card" style="max-width:560px">
+          <div class="card-title">Montos de bonos y descuentos</div>
+          <div class="form-grid form-2">
+            <div class="field"><label>Bono asistencia perfecta (S/.)</label><input type="number" id="cfgBonoAsistencia" step="0.01"></div>
+            <div class="field"><label>Bono cero pérdidas — solo Auxiliar (S/.)</label><input type="number" id="cfgBonoCeroPerdidas" step="0.01"></div>
+            <div class="field"><label>Descuento por minuto de tardanza (S/.)</label><input type="number" id="cfgTarifaTardanza" step="0.01"></div>
+            <div class="field"><label>Descuento por falta injustificada (S/.)</label><input type="number" id="cfgMontoFalta" step="0.01"></div>
+            <div class="field"><label>Monto AFP fijo (S/.)</label><input type="number" id="cfgAfpAmount" step="0.01"></div>
+          </div>
+          <button class="btn btn-primary mt" onclick="saveRatesConfig()">Guardar</button>
+        </div>
+        <div class="card mt" style="max-width:560px">
+          <div class="card-title">📐 Fórmula de horas extra</div>
+          <p style="font-size:.8rem;color:var(--txt-soft);line-height:1.6">
+            El valor de cada minuto extra se calcula así:<br>
+            <strong style="color:var(--brand)">Sueldo base ÷ 30 ÷ 10 ÷ 60</strong><br>
+            Ese valor se multiplica por los <em>minutos extra netos</em> del trabajador (minutos después de su hora de salida, <em>menos</em> los minutos de tardanza acumulados en el mes). Es diferente por cada persona según su sueldo.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div><!-- /.app -->
+
+<!-- ══════════════════════════
+     MODAL: CREAR/EDITAR USUARIO
+     ══════════════════════════ -->
+<div class="modal-backdrop" id="userModal">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-title" id="userModalTitle">Nuevo trabajador</div>
+      <button class="modal-close" onclick="closeUserModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="userModalAlert"></div>
+      <form onsubmit="saveUser(event)">
+        <div class="form-grid form-2">
+          <div class="field"><label>Usuario (para iniciar sesión)</label><input id="fUsername" required placeholder="ej: luis_ramirez"></div>
+          <div class="field">
+            <label>Contraseña</label>
+            <div class="password-wrap">
+              <input type="password" id="fPassword" placeholder="Dejar en blanco para no cambiar">
+              <button type="button" class="toggle-pass-btn" onclick="togglePasswordVisibility('fPassword',this)">Ver</button>
+            </div>
+          </div>
+          <div class="field" style="grid-column:1/-1"><label>Nombre completo</label><input id="fName" required placeholder="ej: Luis Ramírez García"></div>
+          <div class="field"><label>Rol</label>
+            <select id="fRole" required onchange="updateScheduleHint()">
+              <option value="">Selecciona un rol…</option>
+              <option value="GERENTE">Gerente</option>
+              <option value="ADMINISTRADOR">Administrador</option>
+              <option value="CONTABILIDAD">Contabilidad</option>
+              <option value="AUXILIAR_REPARTO">Auxiliar de Reparto</option>
+              <option value="TIENDA">Tienda</option>
+              <option value="CONDUCTOR">Conductor</option>
+            </select>
+          </div>
+          <div class="field"><label>Ubicación asignada</label><select id="fLocation"><option value="">Sin asignar</option></select></div>
+          <div class="field"><label>Sueldo base mensual (S/.)</label><input type="number" id="fSalary" step="0.01" min="0" required placeholder="0.00"></div>
+          <div class="field"><label>Hora de inicio personalizada <span class="text-sm">(opcional)</span></label><input type="time" id="fCustomStart"></div>
+        </div>
+        <p class="text-sm mt2" id="scheduleHint">Selecciona un rol para ver su horario por defecto.</p>
+        <div class="divider"></div>
+        <div class="checkbox-row"><input type="checkbox" id="fAfpApplies" checked><label for="fAfpApplies">Se le descuenta AFP</label></div>
+        <div class="checkbox-row mt2"><input type="checkbox" id="fActive" checked><label for="fActive">Cuenta activa</label></div>
+        <div class="divider"></div>
+        <div class="face-reg-box">
+          <div class="face-reg-title">🙂 Registro de rostro <span id="faceRequiredMark" style="color:var(--danger);font-size:.72rem">(requerido para nuevo trabajador)</span></div>
+          <p class="text-sm">Toma una foto del trabajador con la cámara. El sistema la usará para verificar su identidad al marcar asistencia.</p>
+          <video id="regFaceVideo" class="face-reg-video" autoplay muted playsinline style="display:none"></video>
+          <div class="btn-group mt2">
+            <button class="btn btn-ghost btn-sm" type="button" onclick="startRegFace()">📷 Activar cámara</button>
+            <button class="btn btn-success btn-sm" type="button" onclick="captureRegFace()">✅ Capturar rostro</button>
+          </div>
+          <div id="regFaceStatus" class="mt2"></div>
+        </div>
+        <div class="btn-group mt" style="justify-content:flex-end">
+          <button type="button" class="btn btn-danger" id="fDeleteBtn" onclick="deleteUser()" style="display:none">🗑️ Eliminar</button>
+          <button type="button" class="btn btn-ghost" onclick="closeUserModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">💾 Guardar</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -610,9 +1078,9 @@ function login(){
   const user=data.users[u];
   if(user&&user.password===p&&user.active){
     currentUser=user;
-    document.getElementById('headerUserBox').style.display='block';
-    document.getElementById('headerUserName').innerHTML=`<strong>${user.name}</strong><br><span class="badge badge-${user.role}">${ROLES[user.role]}</span>`;
-    document.getElementById('sidebar').style.display='block';
+    document.getElementById('loginWrap').style.display='none'; document.getElementById('appShell').style.display='flex'; document.getElementById('headerUserBox') && (document.getElementById('headerUserBox').style.display='block');
+    const av=currentUser.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(); document.getElementById('sideUserAvatar') && (document.getElementById('sideUserAvatar').textContent=av); document.getElementById('sideUserName') && (document.getElementById('sideUserName').textContent=currentUser.name); document.getElementById('sideUserRole') && (document.getElementById('sideUserRole').textContent=ROLES[currentUser.role]||currentUser.role); document.getElementById('topbarUser') && (document.getElementById('topbarUser').textContent=currentUser.name); const cn=getData().config.companyName; if(document.getElementById('sideCompanyName')) document.getElementById('sideCompanyName').textContent=cn; if(document.getElementById('loginCompanyName')) document.getElementById('loginCompanyName').textContent=cn;
+    // sidebar always visible in new design
     setupMenuByRole();
     showScreen('dashboard');
   }else{
@@ -621,8 +1089,8 @@ function login(){
 }
 function logout(){
   currentUser=null;stopFace();stopRegFace();
-  document.getElementById('headerUserBox').style.display='none';
-  document.getElementById('sidebar').style.display='none';
+  document.getElementById('appShell').style.display='none'; document.getElementById('loginWrap').style.display='flex'; document.getElementById('headerUserBox') && (document.getElementById('headerUserBox').style.display='none');
+  // sidebar managed by loginWrap/appShell visibility
   document.getElementById('loginUsername').value='';
   document.getElementById('loginPassword').value='';
   showScreen('login');
@@ -635,16 +1103,21 @@ function setupMenuByRole(){
   document.getElementById('navAdvances').style.display=CAN_MANAGE_ADVANCES.includes(currentUser.role)?'block':'none';
   document.getElementById('navDiscounts').style.display=CAN_MANAGE_DISCOUNTS.includes(currentUser.role)?'block':'none';
   document.getElementById('navMyLosses').style.display=CAN_VIEW_MY_LOSSES.includes(currentUser.role)?'block':'none';
+  const hasMgmt=CAN_MANAGE_INCIDENTS.includes(currentUser.role)||CAN_MANAGE_ADVANCES.includes(currentUser.role)||CAN_MANAGE_DISCOUNTS.includes(currentUser.role)||CAN_MANAGE_USERS.includes(currentUser.role)||CAN_VIEW_PAYROLL_ALL.includes(currentUser.role)||CAN_CONFIGURE.includes(currentUser.role);
+  const mgmtLabel=document.getElementById('navMgmtLabel'); if(mgmtLabel) mgmtLabel.style.display=hasMgmt?'block':'none';
 }
 
 /* ---------- NAV ---------- */
 function showScreen(id){
   if(id!=='checkin') stopFace();
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const scr=document.getElementById(id); if(scr) scr.classList.add('active');
   if(id!=='login'){
     document.querySelectorAll('.nav-item').forEach(it=>{ if(it.getAttribute('onclick')===`showScreen('${id}')`) it.classList.add('active'); });
+    const pt=PAGE_TITLES[id]||[id,''];
+    const tt=document.getElementById('topbarTitle'); if(tt) tt.textContent=pt[0];
+    const ts=document.getElementById('topbarSub'); if(ts) ts.textContent=pt[1];
   }
   if(id==='dashboard')renderDashboard();
   if(id==='checkin')renderCheckin();
@@ -751,14 +1224,14 @@ function stopRegFace(){
 }
 async function captureRegFace(){
   const video=document.getElementById('regFaceVideo');
-  document.getElementById('regFaceStatus').innerHTML='<div class="geo-status geo-wait">⏳ Analizando rostro…</div>';
+  document.getElementById('regFaceStatus').innerHTML='<div class="verify-status vs-wait">⏳ Analizando rostro… Por favor mantente quieto.</div>';
   const res=await getFaceDescriptorFromVideo(video);
   if(res.error){
-    document.getElementById('regFaceStatus').innerHTML=`<div class="geo-status geo-fail">❌ ${res.error}</div>`;
+    document.getElementById('regFaceStatus').innerHTML=`<div class="verify-status vs-fail">❌ ${res.error}</div>`;
     return;
   }
   pendingFaceDescriptor=res.descriptor;
-  document.getElementById('regFaceStatus').innerHTML='<div class="geo-status geo-ok">✅ Rostro capturado correctamente</div>';
+  document.getElementById('regFaceStatus').innerHTML='<div class="verify-status vs-ok">✅ Rostro capturado correctamente. Ya puedes guardar.</div>';
 }
 
 /* Verificación facial en pantalla de asistencia (con auto-inicio) */
@@ -775,10 +1248,10 @@ function startFace(){
         }
       };
     }).catch(()=>{
-      document.getElementById('faceResult').innerHTML='<div class="alert alert-warning">No se pudo acceder a la cámara. Puedes verificar con el botón "Reactivar cámara".</div>';
+      document.getElementById('faceResult').innerHTML='<div class="verify-status vs-fail">No se pudo acceder a la cámara. Revisa los permisos del navegador e intenta de nuevo.</div>';
     });
   }else{
-    document.getElementById('faceResult').innerHTML='<div class="alert alert-warning">Cámara no disponible en este navegador/dispositivo.</div>';
+    document.getElementById('faceResult').innerHTML='<div class="verify-status vs-fail">Cámara no disponible en este dispositivo.</div>';
   }
 }
 function stopFace(){
@@ -789,26 +1262,26 @@ function stopFace(){
 async function verifyFaceReal(){
   const btn=document.getElementById('verifyFaceBtn');
   if(!currentUser.faceDescriptor){
-    document.getElementById('faceResult').innerHTML='<div class="geo-status geo-fail">❌ Tu usuario no tiene un rostro registrado. Pide al Gerente que lo registre en Usuarios.</div>';
+    document.getElementById('faceResult').innerHTML='<div class="verify-status vs-fail">❌ No tienes un rostro registrado. Pide al Gerente que lo registre en la sección Trabajadores.</div>';
     return;
   }
   if(btn) btn.disabled=true;
   const video=document.getElementById('faceVideo');
-  document.getElementById('faceResult').innerHTML='<div class="geo-status geo-wait">⏳ Analizando rostro…</div>';
+  document.getElementById('faceResult').innerHTML='<div class="verify-status vs-wait">⏳ Analizando rostro… Por favor mantente quieto.</div>';
   const res=await getFaceDescriptorFromVideo(video);
   if(btn) btn.disabled=false;
   if(res.error){
     faceConfirmed=false;
-    document.getElementById('faceResult').innerHTML=`<div class="geo-status geo-fail">❌ ${res.error}</div>`;
+    document.getElementById('faceResult').innerHTML=`<div class="verify-status vs-fail">❌ ${res.error}</div>`;
     return;
   }
   const dist=faceapi.euclideanDistance(res.descriptor,currentUser.faceDescriptor);
   if(dist<FACE_MATCH_THRESHOLD){
     faceConfirmed=true;
-    document.getElementById('faceResult').innerHTML=`<div class="geo-status geo-ok">✅ Rostro verificado correctamente</div>`;
+    document.getElementById('faceResult').innerHTML='<div class="verify-status vs-ok">✅ Rostro verificado — ya puedes marcar tu asistencia</div>';
   }else{
     faceConfirmed=false;
-    document.getElementById('faceResult').innerHTML='<div class="geo-status geo-fail">❌ Rostro no reconocido. No es posible marcar asistencia. Intenta de nuevo con mejor iluminación y mirando de frente.</div>';
+    document.getElementById('faceResult').innerHTML='<div class="verify-status vs-fail">❌ Rostro no reconocido. Intenta de nuevo con mejor iluminación y mirando de frente a la cámara.</div>';
   }
 }
 
@@ -818,9 +1291,7 @@ function renderCheckin(){
   document.getElementById('geoResult').innerHTML='';
   document.getElementById('faceResult').innerHTML='';
   const locName=locationName(currentUser.assignedLocationId);
-  document.getElementById('checkinLocationBanner').innerHTML=currentUser.assignedLocationId
-    ? `📍 Tu ubicación asignada para trabajar es: <strong>${locName}</strong>`
-    : `⚠️ No tienes una ubicación asignada. Puedes marcar desde cualquier ubicación autorizada, pero pide al Gerente que te asigne una para mayor claridad.`;
+  const clb=document.getElementById('clockLocationBanner'); if(clb) clb.innerHTML=currentUser.assignedLocationId ? `📍 <strong>${locName}</strong>` : '⚠️ Sin ubicación asignada';
   updateTodayRecords();
   verifyLocation();
   startFace();
@@ -830,11 +1301,11 @@ function verifyLocation(){
   const locations=data.config.locations||[];
   const resultBox=document.getElementById('geoResult');
   if(locations.length===0){
-    resultBox.innerHTML='<div class="geo-status geo-fail">⚠️ Aún no hay ubicaciones configuradas. Pide al Gerente que agregue al menos una en Configuración → Ubicaciones.</div>';
+    resultBox.innerHTML='<div class="verify-status vs-fail">⚠️ Aún no hay ubicaciones configuradas. El Gerente debe agregarlas en Configuración → Ubicaciones.</div>';
     return;
   }
   if(!navigator.geolocation){
-    resultBox.innerHTML='<div class="geo-status geo-fail">Este navegador no soporta geolocalización.</div>';
+    resultBox.innerHTML='<div class="verify-status vs-fail">Este navegador no soporta geolocalización.</div>';
     return;
   }
   resultBox.innerHTML='<div class="geo-status geo-wait">⏳ Obteniendo ubicación…</div>';
@@ -846,11 +1317,11 @@ function verifyLocation(){
     });
     if(best&&best.dist<=best.loc.radius){
       lastGeoOk=true;lastGeoLocationName=best.loc.name;
-      resultBox.innerHTML=`<div class="geo-status geo-ok">✅ Dentro del rango de "${best.loc.name}" (${Math.round(best.dist)}m, precisión GPS ±${Math.round(pos.coords.accuracy)}m)</div>`;
+      resultBox.innerHTML=`<div class="verify-status vs-ok">✅ Ubicación confirmada: <strong>${best.loc.name}</strong> (a ${Math.round(best.dist)} m, precisión GPS ±${Math.round(pos.coords.accuracy)} m)</div>`;
     }else{
       lastGeoOk=false;lastGeoLocationName='';
       const msg=best?`Ubicación más cercana: "${best.loc.name}" a ${Math.round(best.dist)}m (máx ${best.loc.radius}m permitido)`:'No hay ubicaciones cercanas.';
-      resultBox.innerHTML=`<div class="geo-status geo-fail">❌ Fuera de rango. ${msg}</div>`;
+      resultBox.innerHTML=`<div class="verify-status vs-fail">❌ Fuera de rango. ${msg}</div>`;
     }
   },err=>{
     lastGeoOk=false;
@@ -859,7 +1330,7 @@ function verifyLocation(){
     else if(err.code===2) msg='Ubicación no disponible en este momento. Verifica tu GPS o conexión e inténtalo de nuevo.';
     else if(err.code===3) msg='Se agotó el tiempo de espera al obtener tu ubicación. Inténtalo de nuevo.';
     msg+=' Nota: la geolocalización requiere una conexión HTTPS (o abrir el archivo en localhost).';
-    resultBox.innerHTML=`<div class="geo-status geo-fail">❌ ${msg}</div>`;
+    resultBox.innerHTML=`<div class="verify-status vs-fail">❌ ${msg}</div>`;
   },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
 }
 
@@ -892,11 +1363,11 @@ function updateTodayRecords(){
   const today=new Date().toISOString().split('T')[0];
   const logs=data.attendance.filter(l=>l.user===currentUser.username&&l.date===today).sort((a,b)=>a.timestamp-b.timestamp);
   const t=document.getElementById('todayRecords');
-  t.innerHTML=logs.length?logs.map(l=>`<tr><td>${l.time}</td><td>${l.type==='in'?'➜ Entrada':'← Salida'}</td><td>${l.location||'—'}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:#999">Sin registros hoy</td></tr>';
+  t.innerHTML=logs.length?logs.map(l=>`<tr><td>${l.time}</td><td>${l.type==='in'?'<span class="chip chip-green">☀️ Entrada</span>':'<span class="chip chip-red">🌙 Salida</span>'}</td><td>${l.location||'—'}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:#999">Sin registros hoy</td></tr>';
 }
 function showAlertOn(id,msg,type){
   const c=document.getElementById(id);
-  c.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+  c.innerHTML=`<div class="alert alert-${type}"><span class="alert-icon">${type==="success"?"✅":type==="error"?"❌":"⚠️"}</span>${msg}</div>`;
   setTimeout(()=>c.innerHTML='',4500);
 }
 
@@ -978,9 +1449,7 @@ function renderDashboard(){
   const status=todayLogs.some(l=>l.type==='in')?(todayLogs.some(l=>l.type==='out')?'Jornada completa':'Dentro'):'Fuera';
 
   const locName=locationName(currentUser.assignedLocationId);
-  document.getElementById('dashLocationBanner').innerHTML=currentUser.assignedLocationId
-    ? `📍 Tu ubicación asignada para trabajar es: <strong>${locName}</strong>`
-    : `⚠️ Aún no tienes una ubicación asignada. Consulta con el Gerente.`;
+  const dlb=document.getElementById('dashBanner'); if(dlb) dlb.innerHTML=currentUser.assignedLocationId ? `<div class='banner banner-blue'><span class='banner-icon'>📍</span>Tu ubicación asignada para trabajar: <strong>${locName}</strong></div>` : `<div class='banner banner-amber'><span class='banner-icon'>⚠️</span>Aún no tienes una ubicación asignada. Consulta con el Gerente.</div>`;
 
   let statsHtml=`
     <div class="stat-card"><h3>Estado hoy</h3><div class="val">${status}</div></div>
@@ -997,7 +1466,7 @@ function renderDashboard(){
   document.getElementById('dashStats').innerHTML=statsHtml;
 
   const latest=data.attendance.filter(l=>l.user===currentUser.username).sort((a,b)=>b.timestamp-a.timestamp).slice(0,6);
-  document.getElementById('dashLatest').innerHTML=latest.length?latest.map(l=>`<tr><td>${new Date(l.timestamp).toLocaleDateString('es-ES')}</td><td>${l.time}</td><td>${l.type==='in'?'Entrada':'Salida'}</td><td>${l.location||'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#999">Sin registros</td></tr>';
+  document.getElementById('dashLatest').innerHTML=latest.length?latest.map(l=>`<tr><td>${new Date(l.timestamp).toLocaleDateString('es-ES')}</td><td>${l.time}</td><td>${l.type==='in'?'<span class="chip chip-green">☀️ Entrada</span>':'<span class="chip chip-red">🌙 Salida</span>'}</td><td>${l.location||'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#999">Sin registros</td></tr>';
 }
 
 /* ---------- MI NÓMINA ---------- */
@@ -1008,34 +1477,34 @@ function renderMyPayroll(){
   document.getElementById('payrollDetail').innerHTML=payrollHtml(p);
 }
 function payrollHtml(p){
-  let rows=`
-    <div class="payroll-row"><span>Sueldo base</span><span>${fmtMoney(p.baseSalary)}</span></div>
-    <div class="payroll-row"><span>Días asistidos / hábiles</span><span>${p.daysAttended} / ${p.businessDays}</span></div>
-    <div class="payroll-row"><span>Faltas injustificadas</span><span>${p.faltas}</span></div>
-    <div class="payroll-row"><span>Minutos de tardanza acumulados (mes)</span><span>${fmtMinutes(p.tardinessMinutes)}</span></div>
-    <div class="payroll-row"><span>Minutos extra acumulados (después de hora de salida)</span><span>${fmtMinutes(p.extraMinutes)}</span></div>
-    <div class="payroll-row"><span>Horas extra netas (extra - tardanza)</span><span class="pos">+${fmtMoney(p.overtimePay)} (${fmtMinutes(p.overtimeNetMinutes)})</span></div>`;
-  if(p.user.role!=='CONTABILIDAD'){
-    rows+=`<div class="payroll-row"><span>Bono asistencia perfecta</span><span class="pos">+${fmtMoney(p.bonoAsistenciaPerfecta)}</span></div>`;
-  }
-  if(p.isAuxiliarBonus){
-    rows+=`<div class="payroll-row"><span>Bono cero pérdidas (productos)</span><span class="pos">+${fmtMoney(p.bonoCeroPerdidas)}</span></div>`;
-  }
-  if(p.hasLossTracking){
-    rows+=`<div class="payroll-row"><span>Descuento productos perdidos</span><span class="neg">-${fmtMoney(p.lostProductsTotal)}</span></div>`;
-  }
-  rows+=`
-    <div class="payroll-row"><span>Descuento por tardanzas</span><span class="neg">-${fmtMoney(p.descuentoTardanza)}</span></div>
-    <div class="payroll-row"><span>Descuento por faltas</span><span class="neg">-${fmtMoney(p.descuentoFaltas)}</span></div>
-    <div class="payroll-row"><span>Descuento AFP${p.descuentoAFP===0?' (no aplica)':''}</span><span class="neg">-${fmtMoney(p.descuentoAFP)}</span></div>`;
-  if(p.user.role==='CONDUCTOR'){
-    rows+=`<div class="payroll-row"><span>Descuento por falta de liquidación</span><span class="neg">-${fmtMoney(p.liquidacionDescuentoTotal)}</span></div>`;
-  }
-  rows+=`
-    <div class="payroll-row"><span>Adelantos</span><span class="neg">-${fmtMoney(p.advancesTotal)}</span></div>
-    <div class="payroll-row total"><span>Total a pagar</span><span>${fmtMoney(p.totalPagar)}</span></div>
-  `;
-  return `<div class="card">${rows}</div>`;
+  // helper local
+  const row=(label,val,cls='')=>`<tr><td>${label}</td><td class="${cls}">${val}</td></tr>`;
+  const srow=(label)=>`<tr class="section-row"><td colspan="2">${label}</td></tr>`;
+  let html='<div class="table-wrap"><table class="payroll-table">';
+  html+=srow('📋 Asistencia');
+  html+=row('Sueldo base mensual',fmtMoney(p.baseSalary));
+  html+=row('Días asistidos / días hábiles',`${p.daysAttended} de ${p.businessDays}`);
+  html+=row('Faltas injustificadas',`${p.faltas} día(s)`);
+  html+=row('Minutos de tardanza acumulados (mes)',fmtMinutes(p.tardinessMinutes),'neg-val');
+  html+=srow('⏱ Horas extra');
+  html+=row('Minutos extra acumulados (después de hora de salida)',fmtMinutes(p.extraMinutes));
+  html+=row('Horas extra netas (extra − tardanza)',`${fmtMoney(p.overtimePay)} (${fmtMinutes(p.overtimeNetMinutes)})`,'pos-val');
+  html+=srow('🎁 Bonos');
+  if(p.user.role!=='CONTABILIDAD') html+=row('Bono asistencia perfecta',`+${fmtMoney(p.bonoAsistenciaPerfecta)}`,'pos-val');
+  if(p.isAuxiliarBonus) html+=row('Bono cero pérdidas (productos)',`+${fmtMoney(p.bonoCeroPerdidas)}`,'pos-val');
+  html+=srow('➖ Descuentos');
+  if(p.hasLossTracking) html+=row('Descuento productos perdidos',`−${fmtMoney(p.lostProductsTotal)}`,'neg-val');
+  html+=row('Descuento por tardanzas',`−${fmtMoney(p.descuentoTardanza)}`,'neg-val');
+  html+=row('Descuento por faltas',`−${fmtMoney(p.descuentoFaltas)}`,'neg-val');
+  html+=row(`Descuento AFP${p.descuentoAFP===0?' (no aplica)':''}`,`−${fmtMoney(p.descuentoAFP)}`,'neg-val');
+  if(p.user.role==='CONDUCTOR') html+=row('Descuento por falta de liquidación',`−${fmtMoney(p.liquidacionDescuentoTotal)}`,'neg-val');
+  html+=row('Adelantos',`−${fmtMoney(p.advancesTotal)}`,'neg-val');
+  html+=`<tr class="total-row"><td>💳 Total a pagar</td><td>${fmtMoney(p.totalPagar)}</td></tr>`;
+  html+='</table></div>';
+  return html;
+  // old version follows — unreachable
+
+  return ''; // handled above
 }
 
 /* ---------- MIS PRODUCTOS PERDIDOS (Auxiliar) ---------- */
@@ -1043,7 +1512,7 @@ function renderMyLosses(){
   const data=getData();
   const list=data.incidents.filter(i=>i.user===currentUser.username).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const rows=list.map(i=>`<tr><td>${new Date(i.date).toLocaleDateString('es-ES')}</td><td>${zoneName(i.zone)}</td><td>${i.description}</td><td>${i.planilla||'—'}</td><td>${fmtMoney(i.amount)}</td></tr>`).join('');
-  document.getElementById('myLossesTable').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;color:#999">No tienes incidencias registradas</td></tr>';
+  document.getElementById('myLossesTable').innerHTML=rows||'<tr><td colspan="5" class="empty-state"><div class="empty-icon">📦</div>No tienes incidencias registradas</td></tr>';
 }
 
 /* ---------- NÓMINA GENERAL ---------- */
@@ -1067,10 +1536,10 @@ function renderPayrollAll(){
       <td class="neg">${fmtMoney(p.liquidacionDescuentoTotal)}</td>
       <td class="neg">${fmtMoney(p.advancesTotal)}</td>
       <td><strong>${fmtMoney(p.totalPagar)}</strong></td>
-      <td><button class="btn btn-info btn-small" onclick="exportPayslipPDF('${u}',${y},${m})">PDF</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="exportPayslipPDF('${u}',${y},${m})">PDF</button></td>
     </tr>`;
   }).join('');
-  document.getElementById('payrollAllTable').innerHTML=rows||'<tr><td colspan="14" style="text-align:center;color:#999">Sin usuarios</td></tr>';
+  document.getElementById('payrollAllTable').innerHTML=rows||'<tr><td colspan="14" class="empty-state"><div class="empty-icon">📊</div>Sin usuarios registrados</td></tr>';
 }
 
 /* ---------- ADELANTOS (solo Gerente asigna) ---------- */
@@ -1095,10 +1564,9 @@ function renderAdvances(){
   if(filterUser) list=list.filter(a=>a.user===filterUser);
   const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(a=>{
     const userName=data.users[a.user]?data.users[a.user].name:a.user;
-    return `<tr><td>${userName}</td><td>${new Date(a.date).toLocaleDateString('es-ES')}</td><td>${fmtMoney(a.amount)}</td><td>${a.reason||'—'}</td>
-    <td><button class="btn btn-danger btn-small" onclick="deleteAdvance('${a.id}')">Eliminar</button></td></tr>`;
+    return `<tr><td>${userName}</td><td>${new Date(a.date).toLocaleDateString('es-ES')}</td><td class="money">${fmtMoney(a.amount)}</td><td>${a.reason||'—'}</td><td><button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteAdvance('${a.id}')">🗑️</button></td></tr>`;
   }).join('');
-  document.getElementById('advancesTable').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;color:#999">Sin adelantos registrados</td></tr>';
+  document.getElementById('advancesTable').innerHTML=rows||'<tr><td colspan="5" class="empty-state"><div class="empty-icon">💵</div>Sin adelantos registrados</td></tr>';
 }
 function createAdvance(){
   const user=document.getElementById('advUser').value;
@@ -1154,10 +1622,9 @@ function renderIncidents(){
   const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(i=>{
     const uname=data.users[i.user]?data.users[i.user].name:i.user;
     const sharedNote=i.sharedCount&&i.sharedCount>1?` <span class="hint" style="margin:0">(÷${i.sharedCount})</span>`:'';
-    return `<tr><td>${uname}</td><td>${new Date(i.date).toLocaleDateString('es-ES')}</td><td>${zoneName(i.zone)}</td><td>${i.description}</td><td>${i.planilla||'—'}</td><td>${fmtMoney(i.amount)}${sharedNote}</td>
-    <td><button class="btn btn-danger btn-small" onclick="deleteIncident('${i.id}')">Eliminar</button></td></tr>`;
+    return `<tr><td>${uname}</td><td>${new Date(i.date).toLocaleDateString('es-ES')}</td><td>${zoneName(i.zone)}</td><td>${i.description}</td><td>${i.planilla||'—'}</td><td class="money">${fmtMoney(i.amount)}${sharedNote}</td><td><button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteIncident('${i.id}')">🗑️</button></td></tr>`;
   }).join('');
-  document.getElementById('incidentsTable').innerHTML=rows||'<tr><td colspan="7" style="text-align:center;color:#999">Sin incidencias</td></tr>';
+  document.getElementById('incidentsTable').innerHTML=rows||'<tr><td colspan="7" class="empty-state"><div class="empty-icon">📦</div>Sin incidencias</td></tr>';
 }
 function createIncident(){
   const select=document.getElementById('incUser');
@@ -1202,10 +1669,9 @@ function renderDiscounts(){
   if(filterUser) list=list.filter(d=>d.user===filterUser);
   const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(d=>{
     const uname=data.users[d.user]?data.users[d.user].name:d.user;
-    return `<tr><td>${uname}</td><td>${new Date(d.date).toLocaleDateString('es-ES')}</td><td>${zoneName(d.zone)}</td><td>${d.planilla||'—'}</td><td>${fmtMoney(d.amount)}</td>
-    <td><button class="btn btn-danger btn-small" onclick="deleteDiscount('${d.id}')">Eliminar</button></td></tr>`;
+    return `<tr><td>${uname}</td><td>${new Date(d.date).toLocaleDateString('es-ES')}</td><td>${zoneName(d.zone)}</td><td>${d.planilla||'—'}</td><td class="money">${fmtMoney(d.amount)}</td><td><button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteDiscount('${d.id}')">🗑️</button></td></tr>`;
   }).join('');
-  document.getElementById('discountsTable').innerHTML=rows||'<tr><td colspan="6" style="text-align:center;color:#999">Sin faltantes registrados</td></tr>';
+  document.getElementById('discountsTable').innerHTML=rows||'<tr><td colspan="6" class="empty-state"><div class="empty-icon">🧾</div>Sin faltantes registrados</td></tr>';
 }
 function createDiscount(){
   const user=document.getElementById('discUser').value;
@@ -1243,10 +1709,10 @@ function renderUsers(){
     <td>${u.afpApplies===false?'No':'Sí'}</td>
     <td>${faceBadge}</td>
     <td><span class="badge ${u.active?'badge-active':'badge-inactive'}">${u.active?'Activo':'Inactivo'}</span></td>
-    <td><button class="btn btn-warning btn-small" onclick="editUser('${u.username}')">Editar</button>
-        <button class="btn btn-danger btn-small" onclick="confirmDeleteUser('${u.username}')">Eliminar</button></td></tr>`;
+    <td><button class="btn btn-ghost btn-sm" onclick="editUser('${u.username}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${u.username}')">Eliminar</button></td></tr>`;
   }).join('');
-  document.getElementById('usersTable').innerHTML=rows||'<tr><td colspan="10" style="text-align:center;color:#999">Sin usuarios</td></tr>';
+  document.getElementById('usersTable').innerHTML=rows||'<tr><td colspan="10" class="empty-state"><div class="empty-icon">👥</div>Sin trabajadores registrados</td></tr>';
 }
 function filterUsers(){
   const s=document.getElementById('searchUsers').value.toLowerCase();
@@ -1284,7 +1750,7 @@ function openUserModal(){
   document.getElementById('faceRequiredMark').style.display='inline';
   document.getElementById('regFaceStatus').innerHTML='';
   stopRegFace();
-  document.getElementById('userModal').classList.add('active');
+  document.getElementById('userModal').classList.add('open');
 }
 function editUser(username){
   const data=getData();const u=data.users[username];if(!u)return;
@@ -1302,11 +1768,11 @@ function editUser(username){
   document.getElementById('fDeleteBtn').style.display='inline-block';
   document.getElementById('userModalAlert').innerHTML='';
   document.getElementById('faceRequiredMark').style.display='none';
-  document.getElementById('regFaceStatus').innerHTML=u.faceDescriptor?'<div class="geo-status geo-ok">✅ Este trabajador ya tiene rostro registrado. Captura de nuevo solo si quieres reemplazarlo.</div>':'<div class="geo-status geo-fail">⚠️ Este trabajador no tiene rostro registrado. No podrá marcar asistencia hasta que lo registres.</div>';
+  document.getElementById('regFaceStatus').innerHTML=u.faceDescriptor?'<div class="verify-status vs-ok">✅ Rostro ya registrado. Captura de nuevo solo si quieres actualizarlo.</div>':'<div class="verify-status vs-fail">⚠️ Sin rostro registrado. El trabajador no podrá marcar asistencia. Captura su rostro aquí.</div>';
   stopRegFace();
-  document.getElementById('userModal').classList.add('active');
+  document.getElementById('userModal').classList.add('open');
 }
-function closeUserModal(){ stopRegFace(); document.getElementById('userModal').classList.remove('active'); }
+function closeUserModal(){ stopRegFace(); document.getElementById('userModal').classList.remove('open'); }
 function saveUser(e){
   e.preventDefault();
   const data=getData();
@@ -1320,13 +1786,13 @@ function saveUser(e){
   const afpApplies=document.getElementById('fAfpApplies').checked;
   const active=document.getElementById('fActive').checked;
   if(!username||!name||!role||isNaN(salary)){
-    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">Completa todos los campos</div>';return;
+    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>Completa todos los campos</div>';return;
   }
   if(!editingUsername&&data.users[username]){
-    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">Ese usuario ya existe</div>';return;
+    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>Ese nombre de usuario ya está en uso. Elige otro.</div>';return;
   }
   if(!editingUsername&&!pendingFaceDescriptor){
-    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">Debes registrar el rostro del trabajador antes de guardar</div>';return;
+    document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>Debes capturar el rostro del trabajador antes de guardar.</div>';return;
   }
   if(editingUsername){
     const u=data.users[editingUsername];
@@ -1335,7 +1801,7 @@ function saveUser(e){
     if(password)u.password=password;
     if(pendingFaceDescriptor)u.faceDescriptor=pendingFaceDescriptor;
   }else{
-    if(!password){document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error">La contraseña es requerida</div>';return;}
+    if(!password){document.getElementById('userModalAlert').innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>La contraseña es requerida para el nuevo trabajador.</div>';return;}
     data.users[username]={username,password,name,role,baseSalary:salary,active,customWorkStart,assignedLocationId,afpApplies,faceDescriptor:pendingFaceDescriptor,createdAt:new Date().toISOString()};
   }
   saveData(data);
@@ -1358,8 +1824,8 @@ function confirmDeleteUser(username){
 
 /* ---------- CONFIGURACIÓN (solo Gerente) ---------- */
 function switchConfigTab(e,id){
-  document.querySelectorAll('#config .tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('#config .tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.tab-bar .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(c=>c.classList.remove('active'));
   e.target.classList.add('active');
   document.getElementById(id).classList.add('active');
 }
@@ -1384,6 +1850,7 @@ function saveCompanyConfig(){
   data.config.companyName=name;
   data.config.companyLogoText=logo||name.substring(0,2).toUpperCase();
   saveData(data);
+  const cn2=data.config.companyName; if(document.getElementById('sideCompanyName')) document.getElementById('sideCompanyName').textContent=cn2; if(document.getElementById('loginCompanyName')) document.getElementById('loginCompanyName').textContent=cn2;
   showAlertOn('configAlert','Datos de la empresa guardados','success');
 }
 
@@ -1391,8 +1858,8 @@ function renderLocations(){
   const data=getData();
   const rows=data.config.locations.map(l=>`
     <tr><td>${l.name}</td><td>${l.lat}</td><td>${l.lng}</td><td>${l.radius}</td>
-    <td><button class="btn btn-warning btn-small" onclick="editLocation('${l.id}')">Editar</button>
-        <button class="btn btn-danger btn-small" onclick="deleteLocation('${l.id}')">Eliminar</button></td></tr>`).join('');
+    <td><button class="btn btn-ghost btn-sm" onclick="editLocation('${l.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLocation('${l.id}')">Eliminar</button></td></tr>`).join('');
   document.getElementById('locationsTable').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;color:#999">Sin ubicaciones registradas</td></tr>';
 }
 function useMyLocationForForm(){
@@ -1454,8 +1921,8 @@ function renderZones(){
   const data=getData();
   const rows=data.config.zones.map(z=>`
     <tr><td>${z.name}</td>
-    <td><button class="btn btn-warning btn-small" onclick="editZone('${z.id}')">Editar</button>
-        <button class="btn btn-danger btn-small" onclick="deleteZone('${z.id}')">Eliminar</button></td></tr>`).join('');
+    <td><button class="btn btn-ghost btn-sm" onclick="editZone('${z.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteZone('${z.id}')">Eliminar</button></td></tr>`).join('');
   document.getElementById('zonesTable').innerHTML=rows||'<tr><td colspan="2" style="text-align:center;color:#999">Sin zonas registradas</td></tr>';
 }
 function saveZone(){
@@ -1691,6 +2158,27 @@ function exportAllPayslipsExcel(){
   XLSX.utils.book_append_sheet(wb,ws,'Nomina');
   XLSX.writeFile(wb,`nomina_general_${year}-${pad2(month)}.xlsx`);
 }
+
+
+/* ─── UI helpers ─── */
+function toggleSidebar(){
+  const s=document.getElementById('sidebar');
+  s.classList.toggle('open');
+}
+
+const PAGE_TITLES={
+  dashboard:['Mi resumen','Tu actividad y estadísticas de este mes'],
+  checkin:['Marcar asistencia','Verifica tu ubicación y rostro para marcar'],
+  payroll:['Mi nómina','Detalle de haberes y descuentos'],
+  myLosses:['Mis productos perdidos','Incidencias registradas a tu nombre'],
+  advances:['Adelantos de sueldo','Registro de adelantos aprobados'],
+  incidents:['Incidencias','Productos perdidos — monto dividido entre responsables'],
+  discounts:['Faltante de liquidación','Descuento exclusivo para Conductores'],
+  users:['Trabajadores','Gestión de usuarios del sistema'],
+  payrollAll:['Nómina general','Haberes y descuentos de todos los trabajadores'],
+  config:['Configuración','Empresa, ubicaciones, horarios y montos']
+};
+
 
 /* ---------- INIT ---------- */
 document.addEventListener('DOMContentLoaded',()=>{ initData(); tickClock(); });
