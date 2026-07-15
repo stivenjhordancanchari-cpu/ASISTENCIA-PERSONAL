@@ -2,7 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#1E293B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Asistencias">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Distribuidora — Control de Asistencias</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -437,6 +444,32 @@ h1,h2,h3,h4,p,.hint,.text-sm{text-transform:uppercase!important}
 .sp-ok{background:#DCFCE7;color:#14532D}
 .sp-fail{background:#FEE2E2;color:#7F1D1D}
 
+
+/* ── PWA / iOS / Android friendly ── */
+@supports(padding:max(0px)){
+  .topbar{padding-top:max(14px,env(safe-area-inset-top))}
+  .sidebar{padding-top:env(safe-area-inset-top)}
+  .page{padding-bottom:max(28px,env(safe-area-inset-bottom))}
+}
+*{-webkit-tap-highlight-color:transparent}
+button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
+.btn-icon{min-height:36px}
+@media(max-width:768px){
+  .field input,.field select,.field textarea{font-size:16px!important} /* evita zoom automático en iOS */
+  .btn{min-height:46px}
+  .mark-btn{min-height:80px}
+  .data-table td,.data-table th{padding:12px 10px}
+}
+/* Banner de instalación PWA */
+.install-banner{
+  display:none;position:fixed;bottom:16px;left:16px;right:16px;z-index:300;
+  background:var(--sidebar-bg);color:#fff;padding:14px 18px;border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);align-items:center;gap:12px;
+}
+.install-banner.show{display:flex}
+.install-banner .ib-text{flex:1;font-size:.8rem}
+.install-banner .ib-title{font-weight:700;font-size:.85rem}
+
 /* ───── UTILITY ───── */
 .mt{margin-top:16px}.mt2{margin-top:8px}.mb{margin-bottom:16px}
 .flex{display:flex}.gap{gap:8px}.items-center{align-items:center}
@@ -454,6 +487,14 @@ h1,h2,h3,h4,p,.hint,.text-sm{text-transform:uppercase!important}
 <!-- ═══════════════════════════════════════
      LOGIN  (se muestra cuando no hay sesión)
      ═══════════════════════════════════════ -->
+<div class="install-banner" id="installBanner">
+  <div class="ib-text">
+    <div class="ib-title">📲 INSTALAR APLICACIÓN</div>
+    <div id="installHint">Agrega el sistema a tu pantalla de inicio para usarlo como app.</div>
+  </div>
+  <button class="btn btn-primary btn-sm" id="installBtn" onclick="promptInstall()">Instalar</button>
+  <button class="btn btn-ghost btn-sm" onclick="dismissInstall()">✕</button>
+</div>
 <div class="login-wrap" id="loginWrap">
   <div class="login-card">
     <div class="login-logo">
@@ -921,6 +962,19 @@ h1,h2,h3,h4,p,.hint,.text-sm{text-transform:uppercase!important}
         </div>
       <!-- WhatsApp Templates -->
       <div id="cfgWhatsapp" class="tab-panel">
+        <div class="card mb" style="max-width:600px">
+          <div class="card-title">🔌 Conexión API de WhatsApp (envío 100% automático)</div>
+          <p class="text-sm mb">Si configuras la <strong>API oficial de WhatsApp Business (Meta Cloud API)</strong>, los mensajes se enviarán solos, sin abrir WhatsApp ni tocar nada. Si dejas estos campos vacíos, el sistema abrirá WhatsApp Web con el mensaje listo (modo manual). <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" style="color:var(--brand)">Cómo obtener credenciales →</a></p>
+          <div class="form-grid">
+            <div class="field"><label>Phone Number ID</label><input id="cfgWaPhoneId" placeholder="Ej: 106540352242922" style="text-transform:none!important"></div>
+            <div class="field"><label>Access Token (permanente)</label><input id="cfgWaToken" placeholder="EAAG..." style="text-transform:none!important"></div>
+          </div>
+          <div class="btn-group mt">
+            <button class="btn btn-primary" onclick="saveWhatsappApiConfig()">Guardar conexión</button>
+            <button class="btn btn-ghost" onclick="testWhatsappApi()">📤 Enviar mensaje de prueba</button>
+          </div>
+          <div id="waApiStatus" class="mt2"></div>
+        </div>
         <div class="card" style="max-width:600px">
           <div class="card-title">📱 Plantillas de mensajes WhatsApp</div>
           <p class="text-sm mb">Al registrar un evento, se abrirá WhatsApp con un mensaje pre-escrito. Variables disponibles: <strong>{NOMBRE}</strong> trabajador · <strong>{MONTO}</strong> · <strong>{FECHA}</strong> · <strong>{EMPRESA}</strong> · <strong>{PRODUCTO}</strong> descripción · <strong>{PLANILLA}</strong> N° planilla · <strong>{ZONA}</strong> · <strong>{HORA}</strong> hora de ingreso · <strong>{MINUTOS}</strong> minutos de tardanza</p>
@@ -1009,6 +1063,7 @@ let currentUser=null, editingUsername=null;
 let faceStream=null, faceConfirmed=false, faceAutoTried=false;
 let regFaceStream=null, pendingFaceDescriptor=null;
 let lastGeoOk=false, lastGeoLocationName='', editingLocationId=null, editingZoneId=null;
+let editingAdvanceId=null, editingDiscountId=null;
 let modelsLoaded=false, modelsLoading=false;
 
 const FACE_MODEL_URL='https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master';
@@ -1637,9 +1692,20 @@ function renderAdvances(){
   if(filterUser) list=list.filter(a=>a.user===filterUser);
   const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(a=>{
     const userName=data.users[a.user]?data.users[a.user].name:a.user;
-    return `<tr><td>${userName}</td><td>${new Date(a.date).toLocaleDateString('es-ES')}</td><td class="money">${fmtMoney(a.amount)}</td><td>${a.reason||'—'}</td><td><button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteAdvance('${a.id}')">🗑️</button></td></tr>`;
+    return `<tr><td>${userName}</td><td>${new Date(a.date).toLocaleDateString('es-ES')}</td><td class="money">${fmtMoney(a.amount)}</td><td>${a.reason||'—'}</td><td class="btn-group"><button class="btn btn-ghost btn-sm btn-icon" title="Editar" onclick="editAdvance('${a.id}')">✏️</button><button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteAdvance('${a.id}')">🗑️</button></td></tr>`;
   }).join('');
   document.getElementById('advancesTable').innerHTML=rows||'<tr><td colspan="5" class="empty-state"><div class="empty-icon">💵</div>Sin adelantos registrados</td></tr>';
+}
+function editAdvance(id){
+  const data=getData();
+  const a=data.advances.find(x=>x.id===id);
+  if(!a)return;
+  editingAdvanceId=id;
+  document.getElementById('advUser').value=a.user;
+  document.getElementById('advAmount').value=a.amount;
+  document.getElementById('advDate').value=a.date;
+  showAlertOn('advancesAlert','✏️ Editando adelanto — modifica los datos y presiona Registrar para guardar','info');
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 function createAdvance(){
   const user=document.getElementById('advUser').value;
@@ -1648,6 +1714,16 @@ function createAdvance(){
   const reason=document.getElementById('advReason').value;
   if(!user||!amount||!date){ showAlertOn('advancesAlert','Completa trabajador, monto y fecha','error'); return; }
   const data=getData();
+  if(editingAdvanceId){
+    const a=data.advances.find(x=>x.id===editingAdvanceId);
+    if(a){a.user=user;a.amount=Number(amount);a.date=date;a.reason=reason;}
+    editingAdvanceId=null;
+    saveData(data);
+    showAlertOn('advancesAlert','Adelanto actualizado','success');
+    document.getElementById('advAmount').value='';document.getElementById('advDate').value='';
+    renderAdvances();
+    return;
+  }
   data.advances.push({id:Date.now().toString(),user,date,amount:Number(amount),reason,status:'aprobado',requestedAt:new Date().toISOString()});
   saveData(data);
   showAlertOn('advancesAlert','Adelanto registrado','success');
@@ -1762,9 +1838,22 @@ function renderDiscounts(){
   if(filterUser) list=list.filter(d=>d.user===filterUser);
   const rows=list.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(d=>{
     const uname=data.users[d.user]?data.users[d.user].name:d.user;
-    return `<tr><td>${uname}</td><td>${new Date(d.date).toLocaleDateString('es-ES')}</td><td>${zoneName(d.zone)}</td><td>${d.planilla||'—'}</td><td class="money">${fmtMoney(d.amount)}</td><td><button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteDiscount('${d.id}')">🗑️</button></td></tr>`;
+    return `<tr><td>${uname}</td><td>${new Date(d.date).toLocaleDateString('es-ES')}</td><td>${zoneName(d.zone)}</td><td>${d.planilla||'—'}</td><td class="money">${fmtMoney(d.amount)}</td><td class="btn-group"><button class="btn btn-ghost btn-sm btn-icon" title="Editar" onclick="editDiscount('${d.id}')">✏️</button><button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteDiscount('${d.id}')">🗑️</button></td></tr>`;
   }).join('');
   document.getElementById('discountsTable').innerHTML=rows||'<tr><td colspan="6" class="empty-state"><div class="empty-icon">🧾</div>Sin faltantes registrados</td></tr>';
+}
+function editDiscount(id){
+  const data=getData();
+  const d=data.otherDiscounts.find(x=>x.id===id);
+  if(!d)return;
+  editingDiscountId=id;
+  document.getElementById('discUser').value=d.user;
+  document.getElementById('discZone').value=d.zone;
+  document.getElementById('discDate').value=d.date;
+  document.getElementById('discAmount').value=d.amount;
+  document.getElementById('discPlanilla').value=d.planilla||'';
+  showAlertOn('discountsAlert','✏️ Editando faltante — modifica los datos y presiona Registrar para guardar','info');
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 function createDiscount(){
   const user=document.getElementById('discUser').value;
@@ -1774,6 +1863,16 @@ function createDiscount(){
   const planilla=document.getElementById('discPlanilla').value;
   if(!user||!zone||!date||!amount){ showAlertOn('discountsAlert','Completa conductor, zona, fecha y monto','error'); return; }
   const data=getData();
+  if(editingDiscountId){
+    const d=data.otherDiscounts.find(x=>x.id===editingDiscountId);
+    if(d){d.user=user;d.zone=zone;d.date=date;d.amount=Number(amount);d.planilla=planilla;}
+    editingDiscountId=null;
+    saveData(data);
+    showAlertOn('discountsAlert','Faltante actualizado','success');
+    document.getElementById('discDate').value='';document.getElementById('discAmount').value='';document.getElementById('discPlanilla').value='';
+    renderDiscounts();
+    return;
+  }
   data.otherDiscounts.push({id:Date.now().toString(),user,type:'liquidacion',zone,date,amount:Number(amount),planilla,createdBy:currentUser.username});
   saveData(data);
   const discUserName=data.users[user]?data.users[user].name:user;
@@ -1948,6 +2047,8 @@ function renderConfig(){
   document.getElementById('cfgMontoFalta').value=c.montoFaltaInjustificada;
   document.getElementById('cfgAfpAmount').value=c.afpAmount;
   loadWhatsappConfigUI();
+  if(document.getElementById('cfgWaPhoneId')) document.getElementById('cfgWaPhoneId').value=c.waPhoneId||'';
+  if(document.getElementById('cfgWaToken')) document.getElementById('cfgWaToken').value=c.waToken||'';
 }
 function saveCompanyConfig(){
   const data=getData();
@@ -2337,6 +2438,54 @@ function loadWhatsappConfigUI(){
   if(el('cfgMsgTardanza')) el('cfgMsgTardanza').value=t.msgTardanza;
   if(el('cfgMsgFalta'))    el('cfgMsgFalta').value=t.msgFalta;
 }
+
+/* ─── WHATSAPP CLOUD API ─── */
+function saveWhatsappApiConfig(){
+  const data=getData();
+  data.config.waPhoneId=document.getElementById('cfgWaPhoneId').value.trim();
+  data.config.waToken=document.getElementById('cfgWaToken').value.trim();
+  saveData(data);
+  showAlertOn('configAlert','Conexión de WhatsApp API guardada','success');
+}
+async function sendViaCloudApi(phone,message){
+  const data=getData();
+  if(!data.config.waPhoneId||!data.config.waToken) return {ok:false,reason:'no-config'};
+  try{
+    const res=await fetch(`https://graph.facebook.com/v18.0/${data.config.waPhoneId}/messages`,{
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+data.config.waToken,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        messaging_product:'whatsapp',
+        to:phone,
+        type:'text',
+        text:{body:message}
+      })
+    });
+    const json=await res.json();
+    if(res.ok&&json.messages) return {ok:true};
+    return {ok:false,reason:JSON.stringify(json.error&&json.error.message||json)};
+  }catch(err){
+    return {ok:false,reason:String(err)};
+  }
+}
+async function testWhatsappApi(){
+  const statusBox=document.getElementById('waApiStatus');
+  const data=getData();
+  if(!data.config.waPhoneId||!data.config.waToken){
+    statusBox.innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Primero guarda el Phone Number ID y el Access Token.</div>';return;
+  }
+  const testPhone=prompt('Escribe el número de WhatsApp de prueba (con código de país, ej: 51987654321):');
+  if(!testPhone)return;
+  statusBox.innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Enviando mensaje de prueba…</div>';
+  const r=await sendViaCloudApi(testPhone.replace(/[^0-9]/g,''),'✅ Mensaje de prueba desde el Sistema de Asistencias. La conexión con la API de WhatsApp funciona correctamente.');
+  statusBox.innerHTML=r.ok
+    ?'<div class="alert alert-success"><span class="alert-icon">✅</span>¡Mensaje enviado! La API está funcionando.</div>'
+    :`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${r.reason}. Revisa las credenciales.</div>`;
+}
+
 // Enviar mensaje WhatsApp AUTOMÁTICAMENTE al número del trabajador.
 // vars puede incluir: nombre, monto, fecha, producto, planilla, zona, hora, minutos, targetUsername
 function sendWhatsApp(templateKey, vars){
@@ -2356,17 +2505,30 @@ function sendWhatsApp(templateKey, vars){
     .replace(/{MINUTOS}/g, vars.minutos||'0');
   const encoded=encodeURIComponent(msg);
   const phone=vars.targetUsername&&data.users[vars.targetUsername]?(data.users[vars.targetUsername].whatsapp||''):'';
+  // 1) Intentar envío 100% automático vía Cloud API
+  if(phone&&data.config.waPhoneId&&data.config.waToken){
+    sendViaCloudApi(phone,msg).then(r=>{
+      const box=document.createElement('div');
+      box.className=r.ok?'alert alert-success':'alert alert-warning';
+      box.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.2)';
+      box.innerHTML=r.ok
+        ?`<span class="alert-icon">✅</span>WhatsApp enviado automáticamente a ${vars.nombre}`
+        :`<span class="alert-icon">⚠️</span>API falló (${r.reason}). <a href="https://wa.me/${phone}?text=${encoded}" target="_blank" style="color:var(--brand);font-weight:700">Enviar manualmente</a>`;
+      document.body.appendChild(box);
+      setTimeout(()=>box.remove(),6000);
+    });
+    return;
+  }
+  // 2) Fallback: abrir WhatsApp con el mensaje listo
   const url=phone
     ? `https://wa.me/${phone}?text=${encoded}`
     : `https://wa.me/?text=${encoded}`;
-  // Apertura automática (no requiere confirmación del usuario)
   const win=window.open(url,'_blank');
   if(!win){
-    // Si el navegador bloqueó el popup, mostramos un aviso con enlace manual
     const alertBox=document.createElement('div');
     alertBox.className='alert alert-warning';
     alertBox.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.2)';
-    alertBox.innerHTML=`<span class="alert-icon">📱</span>El navegador bloqueó el envío automático. <a href="${url}" target="_blank" style="color:var(--brand);font-weight:700;text-decoration:underline">Toca aquí para abrir WhatsApp</a>`;
+    alertBox.innerHTML=`<span class="alert-icon">📱</span>El navegador bloqueó la ventana. <a href="${url}" target="_blank" style="color:var(--brand);font-weight:700;text-decoration:underline">Toca aquí para abrir WhatsApp</a>`;
     document.body.appendChild(alertBox);
     setTimeout(()=>alertBox.remove(),8000);
   }
@@ -2411,6 +2573,50 @@ function checkAndNotifyMissedDays(){
   });
   if(anyNew) saveData(data);
 }
+
+
+/* ─── PWA: instalación y service worker ─── */
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  if(!localStorage.getItem('installDismissed')){
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+function promptInstall(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(()=>{
+      deferredInstallPrompt=null;
+      document.getElementById('installBanner').classList.remove('show');
+    });
+  }else{
+    // iOS: no hay prompt automático — mostrar instrucciones
+    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    document.getElementById('installHint').innerHTML=isIOS
+      ? 'En iPhone: toca el botón <strong>Compartir</strong> (cuadrado con flecha) y luego <strong>"Añadir a pantalla de inicio"</strong>.'
+      : 'En Chrome: toca el menú <strong>⋮</strong> y luego <strong>"Añadir a pantalla principal"</strong>.';
+  }
+}
+function dismissInstall(){
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('installDismissed','1');
+}
+// Registrar service worker (solo funciona sobre HTTPS/Vercel)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{/* archivo local: se ignora */});
+  });
+}
+// Mostrar banner en iOS también (no dispara beforeinstallprompt)
+window.addEventListener('load',()=>{
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+  if(isIOS&&!isStandalone&&!localStorage.getItem('installDismissed')){
+    setTimeout(()=>document.getElementById('installBanner').classList.add('show'),2000);
+  }
+});
 
 /* ---------- INIT ---------- */
 document.addEventListener('DOMContentLoaded',()=>{ initData(); tickClock(); });
