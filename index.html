@@ -2863,34 +2863,54 @@ async function supabasePush(){
 async function supabaseCreateTable(){
   const sb=getSupabaseClient();
   if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura y guarda la URL y Key de Supabase primero.</div>';return;}
-  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Creando tabla en Supabase…</div>';
+  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Configurando tabla en Supabase…</div>';
   try{
-    // Intentar insertar un registro vacío — si la tabla no existe, fallará con error de tabla
-    const {error}=await sb.from('app_data').upsert({id:'disam_init',data:{},updated_at:new Date().toISOString()},{onConflict:'id'});
-    if(error&&error.code==='42P01'){
-      // Tabla no existe — mostrar instrucciones SQL
+    // Intentar insertar un registro de prueba
+    const {error}=await sb.from('app_data').upsert(
+      {id:'disam_ping',data:{},updated_at:new Date().toISOString()},
+      {onConflict:'id'}
+    );
+    if(error&&(error.code==='42P01'||error.message.includes('does not exist'))){
+      // Tabla no existe — mostrar SQL completo con Realtime
       document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-warning">
-        <span class="alert-icon">⚠️</span>La tabla no existe aún. Ve a Supabase → <strong>SQL Editor</strong> → "New query" → pega este código y ejecuta:<br><br>
-        <code style="display:block;background:#f1f5f9;padding:10px;border-radius:6px;font-size:.75rem;margin-top:8px;white-space:pre-wrap;text-transform:none!important">
+        <span class="alert-icon">⚠️</span>La tabla no existe. Ve a Supabase → <strong>SQL Editor</strong> → "New query" → pega y ejecuta esto:
+        <pre style="background:#1e293b;color:#fff;padding:12px;border-radius:8px;margin-top:8px;font-size:.72rem;white-space:pre-wrap;text-transform:none!important">
 CREATE TABLE IF NOT EXISTS app_data (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all" ON app_data FOR ALL USING (true) WITH CHECK (true);
-        </code>
-        <br>Después de ejecutarlo, haz clic en "🛠 Crear tabla automáticamente" de nuevo.
+DROP POLICY IF EXISTS "Allow all" ON app_data;
+CREATE POLICY "Allow all" ON app_data
+  FOR ALL USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE app_data;
+        </pre>
+        Luego vuelve y haz clic en este botón de nuevo.
       </div>`;
     }else if(error){
       throw error;
     }else{
-      // Tabla existe — borrar el registro de prueba y subir datos reales
-      await sb.from('app_data').delete().eq('id','disam_init');
+      // Tabla existe — limpiar ping, habilitar realtime y subir datos reales
+      await sb.from('app_data').delete().eq('id','disam_ping');
+      // Ejecutar SQL para habilitar realtime (usando rpc si está disponible)
+      try{
+        await sb.rpc('exec_sql',{sql:'ALTER PUBLICATION supabase_realtime ADD TABLE app_data;'});
+      }catch(_){
+        // Si no existe rpc, el usuario lo ejecutó manualmente — continuar
+      }
       const data=getData();
-      const {error:e2}=await sb.from('app_data').upsert({id:'disam_data',data:data,updated_at:new Date().toISOString()},{onConflict:'id'});
+      data.lastSaved=new Date().toISOString();
+      const {error:e2}=await sb.from('app_data').upsert(
+        {id:'disam_data',data:data,updated_at:data.lastSaved},
+        {onConflict:'id'}
+      );
       if(e2)throw e2;
-      document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>¡Todo listo! Tabla creada y datos subidos. Ahora la sincronización es automática en todos los dispositivos.</div>';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+      document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-success">
+        <span class="alert-icon">✅</span><strong>¡Todo listo!</strong> Datos subidos a Supabase. La sincronización automática está activa.<br>
+        <span style="font-size:.75rem">Ahora ve al celular → Configuración → Empresa → pega la misma URL y Key → "Guardar y conectar". Los datos aparecerán solos.</span>
+      </div>`;
       setSyncStatus('ok','✅ Conectado');
       startRealtime();
     }
@@ -2924,39 +2944,96 @@ async function saveSupabaseConfig(){
 }
 
 // TIEMPO REAL: escuchar cambios desde otros dispositivos
+/* ── Aplicar datos remotos preservando credenciales locales ── */
+function applyRemoteData(remote){
+  if(!remote||!remote.users)return false;
+  const local=getData();
+  remote.config.supabaseUrl=local.config.supabaseUrl;
+  remote.config.supabaseKey=local.config.supabaseKey;
+  if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
+  if(local.config.waToken)   remote.config.waToken=local.config.waToken;
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
+  return true;
+}
+
+/* ── Refrescar la pantalla actual ── */
+function refreshCurrentScreen(){
+  const active=document.querySelector('.page.active');
+  if(active&&active.id&&active.id!=='login') showScreen(active.id);
+}
+
+/* ── Tiempo real con Supabase Realtime ── */
 function startRealtime(){
   const sb=getSupabaseClient(); if(!sb)return;
-  if(_realtimeChannel) sb.removeChannel(_realtimeChannel);
-  _realtimeChannel=sb.channel('disam_realtime')
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_data',filter:'id=eq.disam_data'},payload=>{
-      if(!payload.new||!payload.new.data)return;
-      const remote=payload.new.data;
-      const local=getData();
-      // Preservar credenciales locales
-      remote.config.supabaseUrl=local.config.supabaseUrl;
-      remote.config.supabaseKey=local.config.supabaseKey;
-      if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
-      if(local.config.waToken) remote.config.waToken=local.config.waToken;
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
-      setSyncStatus('ok','🔄 Actualizado');
-      // Refrescar la pantalla actual
-      const activeScreen=document.querySelector('.page.active');
-      if(activeScreen) showScreen(activeScreen.id);
-    })
+  if(_realtimeChannel){try{sb.removeChannel(_realtimeChannel);}catch(_){} _realtimeChannel=null;}
+
+  _realtimeChannel=sb
+    .channel('disam-sync-'+Date.now())
+    .on('postgres_changes',
+      {event:'*', schema:'public', table:'app_data', filter:'id=eq.disam_data'},
+      payload=>{
+        const remote=(payload.new&&payload.new.data)||(payload.record&&payload.record.data);
+        if(!remote)return;
+        if(applyRemoteData(remote)){
+          setSyncStatus('ok','🔄 Actualizado');
+          refreshCurrentScreen();
+        }
+      }
+    )
     .subscribe(status=>{
+      const btn=document.getElementById('realtimeBtn');
       if(status==='SUBSCRIBED'){
-        setSyncStatus('ok','📡 En tiempo real');
-        const btn=document.getElementById('realtimeBtn');
+        setSyncStatus('ok','📡 Tiempo real');
         if(btn) btn.textContent='📡 Tiempo real: ON';
+        // Iniciar polling de respaldo cada 10 segundos
+        startPolling();
+      } else if(status==='CLOSED'||status==='CHANNEL_ERROR'){
+        setSyncStatus('err','Sin conexión');
+        if(btn) btn.textContent='📡 Tiempo real: OFF';
+        // Reconectar en 5 segundos
+        setTimeout(startRealtime, 5000);
       }
     });
 }
 
+/* ── Polling de respaldo: consulta Supabase cada 10s por si falla el realtime ── */
+let _pollInterval=null;
+let _lastRemoteUpdatedAt='';
+function startPolling(){
+  if(_pollInterval) clearInterval(_pollInterval);
+  _pollInterval=setInterval(async()=>{
+    const sb=getSupabaseClient(); if(!sb)return;
+    try{
+      const {data:rows,error}=await sb
+        .from('app_data').select('data,updated_at').eq('id','disam_data').single();
+      if(error||!rows)return;
+      if(rows.updated_at===_lastRemoteUpdatedAt)return; // sin cambios
+      _lastRemoteUpdatedAt=rows.updated_at;
+      // Comparar con el último guardado local
+      const local=getData();
+      const remoteTime=new Date(rows.updated_at).getTime();
+      const localTime=new Date(local.lastSaved||0).getTime();
+      if(remoteTime>localTime+2000){ // remoto es más nuevo (con 2s de margen)
+        if(applyRemoteData(rows.data)){
+          setSyncStatus('ok','🔄 Actualizado');
+          refreshCurrentScreen();
+        }
+      }
+    }catch(_){}
+  }, 10000); // cada 10 segundos
+}
+
+function stopPolling(){
+  if(_pollInterval){clearInterval(_pollInterval);_pollInterval=null;}
+}
+
 function toggleRealtime(){
-  const sb=getSupabaseClient(); if(!sb){showAlertOn('configAlert','Configura Supabase primero','error');return;}
+  const sb=getSupabaseClient();
+  if(!sb){showAlertOn('configAlert','Configura Supabase primero','error');return;}
   if(_realtimeChannel){
-    sb.removeChannel(_realtimeChannel);
+    try{sb.removeChannel(_realtimeChannel);}catch(_){}
     _realtimeChannel=null;
+    stopPolling();
     const btn=document.getElementById('realtimeBtn');
     if(btn) btn.textContent='📡 Tiempo real: OFF';
     setSyncStatus('ok','Desconectado');
@@ -2965,34 +3042,36 @@ function toggleRealtime(){
   }
 }
 
-// Al arrancar: descargar datos frescos y activar tiempo real
+/* ── Al arrancar: descargar datos frescos SIEMPRE, luego activar tiempo real ── */
 async function cloudPullOnLoad(){
   const sb=getSupabaseClient(); if(!sb)return;
   try{
-    const {data:rows,error}=await sb.from('app_data').select('data,updated_at').eq('id','disam_data').single();
-    if(error)return;
-    const remote=rows.data;
-    if(!remote||!remote.users)return;
+    setSyncStatus('sync','Conectando…');
+    const {data:rows,error}=await sb
+      .from('app_data').select('data,updated_at').eq('id','disam_data').single();
+    if(error){setSyncStatus('err','Error BD');return;}
+    if(!rows||!rows.data||!rows.data.users){startRealtime();return;}
+    _lastRemoteUpdatedAt=rows.updated_at;
     const local=getData();
-    // Solo actualizar si el remoto es más nuevo
     const remoteTime=new Date(rows.updated_at).getTime();
     const localTime=new Date(local.lastSaved||0).getTime();
-    if(remoteTime>localTime){
-      remote.config.supabaseUrl=local.config.supabaseUrl;
-      remote.config.supabaseKey=local.config.supabaseKey;
-      if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
-      if(local.config.waToken) remote.config.waToken=local.config.waToken;
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
-      console.log('✅ Datos descargados de Supabase al iniciar');
+    if(remoteTime>localTime+1000){
+      // Hay datos más nuevos en la nube — aplicar y refrescar
+      if(applyRemoteData(rows.data)){
+        setSyncStatus('ok','✅ Sincronizado');
+        refreshCurrentScreen();
+      }
+    } else {
+      setSyncStatus('ok','✅ Al día');
     }
     startRealtime();
-    setSyncStatus('ok','✅ Sincronizado');
   }catch(e){
+    setSyncStatus('err','Sin conexión');
     console.warn('Supabase pull on load:',e.message);
   }
 }
 
-// Compatibilidad: funciones vacías para que no falle código viejo
+// Compatibilidad
 function saveCloudConfig(){}
 function cloudPush(){supabasePush();}
 function cloudPull(){supabasePull();}
