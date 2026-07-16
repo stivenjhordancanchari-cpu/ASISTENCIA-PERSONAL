@@ -557,6 +557,9 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
       </div>
       <button type="submit" class="btn btn-primary btn-lg w-full">Ingresar →</button>
     </form>
+    <div id="loginSyncStatus" style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.75rem;color:#14532D;display:none">
+      <strong>🔄 Sincronizando datos…</strong> Un momento por favor.
+    </div>
     <div class="demo-box">
       <strong>Accesos de demo</strong><br>
       gerente / gerente123 &nbsp;|&nbsp; admin / admin123<br>
@@ -2787,25 +2790,61 @@ function importBackup(event){
 /* ══════════════════════════════════════════════
    SUPABASE — SINCRONIZACIÓN EN TIEMPO REAL
    ══════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════
+// CREDENCIALES SUPABASE — SE ACTUALIZAN AUTOMÁTICAMENTE
+// Cuando el Gerente configura Supabase en un dispositivo,
+// las credenciales se guardan en la nube junto con los datos.
+// Cualquier dispositivo nuevo las descarga y se conecta solo.
+// ═══════════════════════════════════════════════════
+const SUPABASE_HARDCODED_URL = '';  // Dejar vacío — se carga de la config
+const SUPABASE_HARDCODED_KEY = '';  // Dejar vacío — se carga de la config
+
 let _supabase=null, _realtimeChannel=null;
 
 function getSupabaseClient(){
   const data=getData();
-  const url=data.config.supabaseUrl, key=data.config.supabaseKey;
+  // Prioridad: 1) config guardada, 2) constantes hardcoded
+  const url=(data.config&&data.config.supabaseUrl)||SUPABASE_HARDCODED_URL;
+  const key=(data.config&&data.config.supabaseKey)||SUPABASE_HARDCODED_KEY;
   if(!url||!key)return null;
   if(!window.supabase)return null;
-  if(!_supabase) _supabase=window.supabase.createClient(url,key);
+  // Re-crear cliente si cambió la URL
+  if(!_supabase||_supabase.supabaseUrl!==url){
+    _supabase=window.supabase.createClient(url,key,{
+      realtime:{params:{eventsPerSecond:10}},
+      db:{schema:'public'}
+    });
+    _supabase.supabaseUrl=url; // guardar para comparar
+  }
   return _supabase;
 }
 
 function setSyncStatus(state,label){
   const el=document.getElementById('syncIndicator');
   const lbl=document.getElementById('syncLabel');
-  if(!el)return;
-  el.className='sync-indicator show sync-'+state;
-  if(lbl) lbl.textContent=label||'';
-  clearTimeout(window._syncHideTimer);
-  if(state==='ok') window._syncHideTimer=setTimeout(()=>{el.classList.remove('show');},3000);
+  if(el){
+    el.className='sync-indicator show sync-'+state;
+    if(lbl) lbl.textContent=label||'';
+    clearTimeout(window._syncHideTimer);
+    if(state==='ok') window._syncHideTimer=setTimeout(()=>{el.classList.remove('show');},3000);
+  }
+  // También actualizar el estado en la pantalla de login
+  const loginStatus=document.getElementById('loginSyncStatus');
+  if(loginStatus){
+    if(state==='sync'){
+      loginStatus.style.display='block';
+      loginStatus.innerHTML='<strong>🔄 '+label+'</strong> Descargando datos de la nube…';
+    } else if(state==='ok'){
+      loginStatus.style.display='block';
+      loginStatus.style.background='#F0FDF4';
+      loginStatus.style.borderColor='#BBF7D0';
+      loginStatus.style.color='#14532D';
+      loginStatus.innerHTML='<strong>✅ '+label+'</strong> Datos actualizados. Ya puedes iniciar sesión.';
+      setTimeout(()=>{loginStatus.style.display='none';},4000);
+    } else if(state==='err'){
+      loginStatus.style.display='none';
+    }
+  }
 }
 
 async function supabasePushSilent(dataOverride){
@@ -2927,6 +2966,9 @@ async function saveSupabaseConfig(){
   const data=getData();
   data.config.supabaseUrl=url;
   data.config.supabaseKey=key;
+  // IMPORTANTE: las credenciales se guardan EN los datos que se suben a Supabase.
+  // Así cualquier dispositivo nuevo que descargue los datos, automáticamente
+  // hereda las credenciales y se sincroniza sin configuración manual.
   localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
   document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Probando conexión…</div>';
   const sb=getSupabaseClient();
@@ -2944,15 +2986,23 @@ async function saveSupabaseConfig(){
 }
 
 // TIEMPO REAL: escuchar cambios desde otros dispositivos
-/* ── Aplicar datos remotos preservando credenciales locales ── */
+/* ── Aplicar datos remotos ── */
 function applyRemoteData(remote){
   if(!remote||!remote.users)return false;
   const local=getData();
-  remote.config.supabaseUrl=local.config.supabaseUrl;
-  remote.config.supabaseKey=local.config.supabaseKey;
+  // Preservar credenciales: si el local ya las tiene, usarlas
+  // Si no (dispositivo nuevo), heredar las de la nube
+  const supUrl=local.config.supabaseUrl||remote.config.supabaseUrl||SUPABASE_HARDCODED_URL;
+  const supKey=local.config.supabaseKey||remote.config.supabaseKey||SUPABASE_HARDCODED_KEY;
+  remote.config.supabaseUrl=supUrl;
+  remote.config.supabaseKey=supKey;
   if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
   if(local.config.waToken)   remote.config.waToken=local.config.waToken;
   localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
+  // Re-iniciar cliente con las nuevas credenciales si cambiaron
+  if(_supabase&&_supabase.supabaseUrl!==supUrl){
+    _supabase=null;
+  }
   return true;
 }
 
@@ -3152,7 +3202,18 @@ function importUsersExcel(event){
 }
 
 /* ---------- INIT ---------- */
-document.addEventListener('DOMContentLoaded',()=>{ initData(); tickClock(); cloudPullOnLoad(); });
+document.addEventListener('DOMContentLoaded',()=>{
+  initData();
+  tickClock();
+  // Intentar sincronizar con Supabase inmediatamente al cargar
+  // Esto hace que un dispositivo nuevo descargue los datos antes del login
+  cloudPullOnLoad();
+  // Si no se conectó en 3s, reintentar
+  setTimeout(()=>{
+    const sb=getSupabaseClient();
+    if(sb&&!_realtimeChannel) cloudPullOnLoad();
+  }, 3000);
+});
 
 /* ── Forzar mayúsculas en todos los inputs EXCEPTO usuario y contraseña ── */
 const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp','cfgSupabaseUrl','cfgSupabaseKey','cfgWaPhoneId','cfgWaToken'];
