@@ -929,6 +929,52 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
           </div>
           <button class="btn btn-primary mt" onclick="saveCompanyConfig()">Guardar</button>
         </div>
+
+        <!-- RESPALDO LOCAL -->
+        <div class="card mt" style="max-width:560px">
+          <div class="card-title">💾 Respaldo local</div>
+          <p class="text-sm mb">Descarga una copia de todos los datos como seguridad, o impórtala en otro dispositivo.</p>
+          <div class="btn-group">
+            <button class="btn btn-ghost" onclick="exportBackup()">📥 Descargar respaldo</button>
+            <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📤 Importar respaldo</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+          </div>
+        </div>
+
+        <!-- SUPABASE SINCRONIZACIÓN -->
+        <div class="card mt" style="max-width:560px">
+          <div class="card-title">🌐 Sincronización en tiempo real — Supabase</div>
+          <p class="text-sm mb">Con Supabase, cualquier cambio en un celular aparece al instante en todos los demás dispositivos. Es gratis. <a href="https://supabase.com" target="_blank" style="color:var(--brand)">supabase.com →</a></p>
+          <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:var(--radius);padding:14px;margin-bottom:16px;font-size:.78rem;line-height:1.9;text-transform:none!important">
+            <strong>⚡ Pasos (ya hiciste el SQL, ahora pega tus credenciales):</strong><br>
+            1. En Supabase → <strong>⚙️ Settings → API</strong><br>
+            2. Copia <strong>Project URL</strong> y <strong>anon public key</strong><br>
+            3. Pégalas aquí abajo → <strong>"Guardar y conectar"</strong><br>
+            4. Clic en <strong>"🛠 Crear tabla automáticamente"</strong>
+          </div>
+          <div class="form-grid" style="gap:14px">
+            <div class="field" style="grid-column:1/-1">
+              <label>Project URL de Supabase</label>
+              <input id="cfgSupabaseUrl" placeholder="https://xxxxxxxxxxxxxxxx.supabase.co" style="text-transform:none!important" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="field" style="grid-column:1/-1">
+              <label>Anon Public Key</label>
+              <input id="cfgSupabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="text-transform:none!important" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="btn-group mt">
+            <button class="btn btn-primary" onclick="saveSupabaseConfig()">💾 Guardar y conectar</button>
+            <button class="btn btn-success" onclick="supabaseCreateTable()">🛠 Crear tabla automáticamente</button>
+          </div>
+          <div id="cloudStatus" class="mt2"></div>
+          <div class="divider"></div>
+          <div class="btn-group">
+            <button class="btn btn-ghost btn-sm" onclick="supabasePush()">⬆️ Forzar subida</button>
+            <button class="btn btn-ghost btn-sm" onclick="supabasePull()">⬇️ Forzar descarga</button>
+            <button class="btn btn-ghost btn-sm" id="realtimeBtn" onclick="toggleRealtime()">📡 Tiempo real: OFF</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- Ubicaciones -->
