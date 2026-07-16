@@ -16,6 +16,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ───── TOKENS ───── */
 :root {
@@ -482,6 +483,32 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
 }
 .sidebar-logo-icon{overflow:hidden;padding:0}
 
+
+/* ── Indicador Supabase ── */
+.sync-indicator{
+  position:fixed;top:12px;right:14px;z-index:999;
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:99px;font-size:.7rem;font-weight:700;
+  background:rgba(255,255,255,.95);box-shadow:0 2px 8px rgba(0,0,0,.15);
+  transition:opacity .4s;opacity:0;
+}
+.sync-indicator.show{opacity:1}
+.sync-indicator .dot{width:7px;height:7px;border-radius:50%}
+.sync-ok .dot{background:#16A34A}
+.sync-sync .dot{background:#F59E0B;animation:pulse .8s infinite}
+.sync-err .dot{background:#DC2626}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Banner de setup Supabase ── */
+.supabase-setup-banner{
+  background:linear-gradient(135deg,#1a8a1a,#2563EB);
+  color:#fff;border-radius:var(--radius-lg);padding:20px;
+  margin-bottom:20px;display:none;
+}
+.supabase-setup-banner.show{display:block}
+.supabase-setup-banner h3{font-size:1rem;margin-bottom:6px}
+.supabase-setup-banner p{font-size:.8rem;opacity:.9;margin-bottom:12px}
+
 /* ───── UTILITY ───── */
 .mt{margin-top:16px}.mt2{margin-top:8px}.mb{margin-bottom:16px}
 .flex{display:flex}.gap{gap:8px}.items-center{align-items:center}
@@ -619,6 +646,7 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
         <div class="topbar-breadcrumb" id="topbarSub">Bienvenido de vuelta</div>
       </div>
       <div id="topbarUser" style="font-size:.78rem;color:var(--txt-soft);text-align:right"></div>
+      <div class="sync-indicator sync-ok" id="syncIndicator"><div class="dot"></div><span id="syncLabel">Sincronizado</span></div>
     </header>
 
     <!-- ── DASHBOARD ── -->
@@ -1143,11 +1171,12 @@ function getData(){
   };
 }
 function saveData(d){
+  d.lastSaved=new Date().toISOString();
   localStorage.setItem(STORAGE_KEY,JSON.stringify(d));
-  // Auto-sincronizar con la nube si está configurado
-  if(d.config&&d.config.cloudKey&&d.config.cloudBin){
+  // Auto-sincronizar con Supabase si está configurado
+  if(d.config&&d.config.supabaseUrl&&d.config.supabaseKey){
     clearTimeout(window._cloudSyncTimer);
-    window._cloudSyncTimer=setTimeout(()=>cloudPushSilent(d),3000);
+    window._cloudSyncTimer=setTimeout(()=>supabasePushSilent(d),1500);
   }
 }
 
@@ -2079,8 +2108,8 @@ function renderConfig(){
   loadWhatsappConfigUI();
   if(document.getElementById('cfgWaPhoneId')) document.getElementById('cfgWaPhoneId').value=c.waPhoneId||'';
   if(document.getElementById('cfgWaToken')) document.getElementById('cfgWaToken').value=c.waToken||'';
-  if(document.getElementById('cfgCloudKey')) document.getElementById('cfgCloudKey').value=c.cloudKey||'';
-  if(document.getElementById('cfgCloudBin')) document.getElementById('cfgCloudBin').value=c.cloudBin||'';
+  if(document.getElementById('cfgSupabaseUrl')) document.getElementById('cfgSupabaseUrl').value=c.supabaseUrl||'';
+  if(document.getElementById('cfgSupabaseKey')) document.getElementById('cfgSupabaseKey').value=c.supabaseKey||'';
 }
 function saveCompanyConfig(){
   const data=getData();
@@ -2709,99 +2738,218 @@ function importBackup(event){
 }
 
 
-/* ─── SINCRONIZACIÓN AUTOMÁTICA SILENCIOSA ─── */
-async function cloudPushSilent(dataOverride){
+/* ══════════════════════════════════════════════
+   SUPABASE — SINCRONIZACIÓN EN TIEMPO REAL
+   ══════════════════════════════════════════════ */
+let _supabase=null, _realtimeChannel=null;
+
+function getSupabaseClient(){
+  const data=getData();
+  const url=data.config.supabaseUrl, key=data.config.supabaseKey;
+  if(!url||!key)return null;
+  if(!window.supabase)return null;
+  if(!_supabase) _supabase=window.supabase.createClient(url,key);
+  return _supabase;
+}
+
+function setSyncStatus(state,label){
+  const el=document.getElementById('syncIndicator');
+  const lbl=document.getElementById('syncLabel');
+  if(!el)return;
+  el.className='sync-indicator show sync-'+state;
+  if(lbl) lbl.textContent=label||'';
+  clearTimeout(window._syncHideTimer);
+  if(state==='ok') window._syncHideTimer=setTimeout(()=>{el.classList.remove('show');},3000);
+}
+
+async function supabasePushSilent(dataOverride){
+  const sb=getSupabaseClient(); if(!sb)return;
   const data=dataOverride||getData();
-  const key=data.config.cloudKey, bin=data.config.cloudBin;
-  if(!key||!bin)return;
+  setSyncStatus('sync','Sincronizando…');
   try{
-    await fetch(`https://api.jsonbin.io/v3/b/${bin}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify(data)
-    });
-    // Mostrar indicador de sincronización discreto
-    let dot=document.getElementById('syncDot');
-    if(!dot){dot=document.createElement('span');dot.id='syncDot';dot.style.cssText='position:fixed;top:8px;right:8px;width:8px;height:8px;background:#16A34A;border-radius:50%;z-index:999;opacity:0;transition:opacity .4s';document.body.appendChild(dot);}
-    dot.style.opacity='1';
-    setTimeout(()=>{dot.style.opacity='0';},2000);
-  }catch(_){}
+    const payload={id:'disam_data',data:data,updated_at:new Date().toISOString()};
+    const {error}=await sb.from('app_data').upsert(payload,{onConflict:'id'});
+    if(error)throw error;
+    setSyncStatus('ok','✅ Sincronizado');
+  }catch(e){
+    console.error('Supabase push error:',e);
+    setSyncStatus('err','Sin conexión');
+  }
 }
 
-/* ─── SINCRONIZACIÓN AL ABRIR LA APP: bajar datos frescos de la nube ─── */
-async function cloudPullOnLoad(){
-  const data=getData();
-  const key=data.config&&data.config.cloudKey, bin=data.config&&data.config.cloudBin;
-  if(!key||!bin)return;
+async function supabasePull(){
+  const sb=getSupabaseClient();
+  if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura Supabase primero.</div>';return;}
+  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Descargando datos desde Supabase…</div>';
   try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`,{headers:{'X-Master-Key':key}});
-    if(!res.ok)return;
-    const j=await res.json();
-    if(!j.record||!j.record.users)return;
-    // Preservar credenciales de nube locales
-    j.record.config.cloudKey=key;
-    j.record.config.cloudBin=bin;
-    // Preservar clave WhatsApp API local si existe
-    if(data.config.waPhoneId) j.record.config.waPhoneId=data.config.waPhoneId;
-    if(data.config.waToken) j.record.config.waToken=data.config.waToken;
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(j.record));
-    console.log('✅ Datos sincronizados desde la nube');
-  }catch(_){}
+    const {data:rows,error}=await sb.from('app_data').select('data').eq('id','disam_data').single();
+    if(error)throw error;
+    const remote=rows.data;
+    if(!remote||!remote.users)throw new Error('Datos no válidos en la nube');
+    const local=getData();
+    remote.config.supabaseUrl=local.config.supabaseUrl;
+    remote.config.supabaseKey=local.config.supabaseKey;
+    if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
+    if(local.config.waToken) remote.config.waToken=local.config.waToken;
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
+    document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos descargados. Recargando…</div>';
+    setTimeout(()=>location.reload(),1200);
+  }catch(e){
+    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
+  }
 }
 
-/* ─── SINCRONIZACIÓN NUBE: JSONBin.io ─── */
-function saveCloudConfig(){
-  const data=getData();
-  data.config.cloudKey=document.getElementById('cfgCloudKey').value.trim();
-  data.config.cloudBin=document.getElementById('cfgCloudBin').value.trim();
-  saveData(data);
-  showAlertOn('configAlert','Conexión de nube guardada','success');
-}
-async function cloudPush(){
-  const data=getData();
-  const key=data.config.cloudKey, bin=data.config.cloudBin;
-  if(!key||!bin){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Primero configura la API Key y el Bin ID.</div>';return;}
+async function supabasePush(){
+  const sb=getSupabaseClient();
+  if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura Supabase primero.</div>';return;}
   document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Subiendo datos…</div>';
   try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${bin}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':key},
-      body:JSON.stringify(data)
-    });
-    const j=await res.json();
-    document.getElementById('cloudStatus').innerHTML=res.ok
-      ?'<div class="alert alert-success"><span class="alert-icon">✅</span>Datos subidos a la nube correctamente.</div>'
-      :`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${j.message||JSON.stringify(j)}</div>`;
-  }catch(err){
-    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error de conexión: ${err.message}</div>`;
+    const data=getData();
+    const {error}=await sb.from('app_data').upsert({id:'disam_data',data:data,updated_at:new Date().toISOString()},{onConflict:'id'});
+    if(error)throw error;
+    document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos subidos a Supabase correctamente.</div>';
+    setSyncStatus('ok','✅ Sincronizado');
+  }catch(e){
+    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
   }
 }
-async function cloudPull(){
-  const data=getData();
-  const key=data.config.cloudKey, bin=data.config.cloudBin;
-  if(!key||!bin){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Primero configura la API Key y el Bin ID.</div>';return;}
-  if(!confirm('⚠️ Esto reemplazará los datos locales con los de la nube. ¿Continuar?'))return;
-  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Descargando datos…</div>';
+
+async function supabaseCreateTable(){
+  const sb=getSupabaseClient();
+  if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura y guarda la URL y Key de Supabase primero.</div>';return;}
+  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Creando tabla en Supabase…</div>';
   try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`,{
-      headers:{'X-Master-Key':key}
-    });
-    const j=await res.json();
-    if(res.ok&&j.record&&j.record.users){
-      const cloudKey=j.record.config.cloudKey||key;
-      const cloudBin=j.record.config.cloudBin||bin;
-      j.record.config.cloudKey=cloudKey;
-      j.record.config.cloudBin=cloudBin;
-      saveData(j.record);
-      document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos descargados. La página se recargará.</div>';
-      setTimeout(()=>location.reload(),1500);
+    // Intentar insertar un registro vacío — si la tabla no existe, fallará con error de tabla
+    const {error}=await sb.from('app_data').upsert({id:'disam_init',data:{},updated_at:new Date().toISOString()},{onConflict:'id'});
+    if(error&&error.code==='42P01'){
+      // Tabla no existe — mostrar instrucciones SQL
+      document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-warning">
+        <span class="alert-icon">⚠️</span>La tabla no existe aún. Ve a Supabase → <strong>SQL Editor</strong> → "New query" → pega este código y ejecuta:<br><br>
+        <code style="display:block;background:#f1f5f9;padding:10px;border-radius:6px;font-size:.75rem;margin-top:8px;white-space:pre-wrap;text-transform:none!important">
+CREATE TABLE IF NOT EXISTS app_data (
+  id TEXT PRIMARY KEY,
+  data JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON app_data FOR ALL USING (true) WITH CHECK (true);
+        </code>
+        <br>Después de ejecutarlo, haz clic en "🛠 Crear tabla automáticamente" de nuevo.
+      </div>`;
+    }else if(error){
+      throw error;
     }else{
-      document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${j.message||'Datos no válidos'}</div>`;
+      // Tabla existe — borrar el registro de prueba y subir datos reales
+      await sb.from('app_data').delete().eq('id','disam_init');
+      const data=getData();
+      const {error:e2}=await sb.from('app_data').upsert({id:'disam_data',data:data,updated_at:new Date().toISOString()},{onConflict:'id'});
+      if(e2)throw e2;
+      document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>¡Todo listo! Tabla creada y datos subidos. Ahora la sincronización es automática en todos los dispositivos.</div>';
+      setSyncStatus('ok','✅ Conectado');
+      startRealtime();
     }
-  }catch(err){
-    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error de conexión: ${err.message}</div>`;
+  }catch(e){
+    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
   }
 }
+
+async function saveSupabaseConfig(){
+  const url=document.getElementById('cfgSupabaseUrl').value.trim();
+  const key=document.getElementById('cfgSupabaseKey').value.trim();
+  if(!url||!key){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Debes ingresar la URL y la Key.</div>';return;}
+  _supabase=null; // resetear cliente para usar nuevas credenciales
+  const data=getData();
+  data.config.supabaseUrl=url;
+  data.config.supabaseKey=key;
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Probando conexión…</div>';
+  const sb=getSupabaseClient();
+  if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>No se pudo inicializar Supabase. Verifica la URL.</div>';return;}
+  // Test de conexión
+  try{
+    const {error}=await sb.from('app_data').select('id').limit(1);
+    if(error&&error.code!=='42P01') throw error;
+    document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>¡Conectado a Supabase! Ahora haz clic en "🛠 Crear tabla automáticamente".</div>';
+    setSyncStatus('ok','✅ Conectado');
+    startRealtime();
+  }catch(e){
+    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error de conexión: ${e.message}. Verifica tu URL y Key.</div>`;
+  }
+}
+
+// TIEMPO REAL: escuchar cambios desde otros dispositivos
+function startRealtime(){
+  const sb=getSupabaseClient(); if(!sb)return;
+  if(_realtimeChannel) sb.removeChannel(_realtimeChannel);
+  _realtimeChannel=sb.channel('disam_realtime')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_data',filter:'id=eq.disam_data'},payload=>{
+      if(!payload.new||!payload.new.data)return;
+      const remote=payload.new.data;
+      const local=getData();
+      // Preservar credenciales locales
+      remote.config.supabaseUrl=local.config.supabaseUrl;
+      remote.config.supabaseKey=local.config.supabaseKey;
+      if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
+      if(local.config.waToken) remote.config.waToken=local.config.waToken;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
+      setSyncStatus('ok','🔄 Actualizado');
+      // Refrescar la pantalla actual
+      const activeScreen=document.querySelector('.page.active');
+      if(activeScreen) showScreen(activeScreen.id);
+    })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){
+        setSyncStatus('ok','📡 En tiempo real');
+        const btn=document.getElementById('realtimeBtn');
+        if(btn) btn.textContent='📡 Tiempo real: ON';
+      }
+    });
+}
+
+function toggleRealtime(){
+  const sb=getSupabaseClient(); if(!sb){showAlertOn('configAlert','Configura Supabase primero','error');return;}
+  if(_realtimeChannel){
+    sb.removeChannel(_realtimeChannel);
+    _realtimeChannel=null;
+    const btn=document.getElementById('realtimeBtn');
+    if(btn) btn.textContent='📡 Tiempo real: OFF';
+    setSyncStatus('ok','Desconectado');
+  }else{
+    startRealtime();
+  }
+}
+
+// Al arrancar: descargar datos frescos y activar tiempo real
+async function cloudPullOnLoad(){
+  const sb=getSupabaseClient(); if(!sb)return;
+  try{
+    const {data:rows,error}=await sb.from('app_data').select('data,updated_at').eq('id','disam_data').single();
+    if(error)return;
+    const remote=rows.data;
+    if(!remote||!remote.users)return;
+    const local=getData();
+    // Solo actualizar si el remoto es más nuevo
+    const remoteTime=new Date(rows.updated_at).getTime();
+    const localTime=new Date(local.lastSaved||0).getTime();
+    if(remoteTime>localTime){
+      remote.config.supabaseUrl=local.config.supabaseUrl;
+      remote.config.supabaseKey=local.config.supabaseKey;
+      if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
+      if(local.config.waToken) remote.config.waToken=local.config.waToken;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
+      console.log('✅ Datos descargados de Supabase al iniciar');
+    }
+    startRealtime();
+    setSyncStatus('ok','✅ Sincronizado');
+  }catch(e){
+    console.warn('Supabase pull on load:',e.message);
+  }
+}
+
+// Compatibilidad: funciones vacías para que no falle código viejo
+function saveCloudConfig(){}
+function cloudPush(){supabasePush();}
+function cloudPull(){supabasePull();}
 
 
 /* ─── IMPORTAR TRABAJADORES DESDE EXCEL ─── */
@@ -2882,7 +3030,7 @@ function importUsersExcel(event){
 document.addEventListener('DOMContentLoaded',()=>{ initData(); tickClock(); cloudPullOnLoad(); });
 
 /* ── Forzar mayúsculas en todos los inputs EXCEPTO usuario y contraseña ── */
-const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp','cfgCloudKey','cfgCloudBin','cfgWaPhoneId','cfgWaToken'];
+const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp','cfgSupabaseUrl','cfgSupabaseKey','cfgWaPhoneId','cfgWaToken'];
 document.addEventListener('input',function(e){
   const t=e.target;
   if(SKIP_UPPERCASE.includes(t.id)) return;
