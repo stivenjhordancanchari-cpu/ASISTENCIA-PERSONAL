@@ -46,10 +46,10 @@
 /* ───── RESET ───── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{font-size:14px;-webkit-text-size-adjust:100%}
-body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;flex-direction:column}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);display:flex;flex-direction:column;min-height:100dvh}
 
 /* ───── LAYOUT SHELL ───── */
-.app{display:flex;min-height:100vh}
+.app{display:flex;min-height:100dvh}
 
 /* ───── SIDEBAR ───── */
 .sidebar{
@@ -111,7 +111,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:10
 
 /* ───── MAIN CONTENT ───── */
 .main{
-  flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;
+  flex:1;margin-left:240px;display:flex;flex-direction:column;
 }
 .topbar{
   background:var(--card);border-bottom:1px solid var(--border);
@@ -120,7 +120,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:10
 }
 .topbar-title{font-size:1.15rem;font-weight:700;color:var(--txt)}
 .topbar-breadcrumb{font-size:.75rem;color:var(--txt-soft);margin-top:1px}
-.page{padding:28px;flex:1;display:none}
+.page{padding:28px;display:none}
 .page.active{display:block}
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
 .page-title{font-size:1.4rem;font-weight:700;color:var(--txt)}
@@ -816,7 +816,10 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
           <div class="page-title">Trabajadores</div>
           <div class="page-desc">Crea y gestiona todos los usuarios del sistema</div>
         </div>
-        <button class="btn btn-primary" onclick="openUserModal()">➕ Nuevo trabajador</button>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="openUserModal()">➕ Nuevo trabajador</button>
+          <button class="btn btn-ghost" onclick="exportUsersExcel()">📊 Exportar a Excel</button>
+        </div>
       </div>
       <div id="usersAlert"></div>
       <div class="field" style="max-width:280px;margin-bottom:16px">
@@ -977,7 +980,7 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
         </div>
         <div class="card" style="max-width:600px">
           <div class="card-title">📱 Plantillas de mensajes WhatsApp</div>
-          <p class="text-sm mb">Al registrar un evento, se abrirá WhatsApp con un mensaje pre-escrito. Variables disponibles: <strong>{NOMBRE}</strong> trabajador · <strong>{MONTO}</strong> · <strong>{FECHA}</strong> · <strong>{EMPRESA}</strong> · <strong>{PRODUCTO}</strong> descripción · <strong>{PLANILLA}</strong> N° planilla · <strong>{ZONA}</strong> · <strong>{HORA}</strong> hora de ingreso · <strong>{MINUTOS}</strong> minutos de tardanza</p>
+          <p class="text-sm mb">Al registrar un evento, se abrirá WhatsApp con un mensaje pre-escrito. Variables disponibles: <strong>{NOMBRE}</strong> trabajador · <strong>{MONTO}</strong> · <strong>{FECHA}</strong> · <strong>{EMPRESA}</strong> · <strong>{PRODUCTO}</strong> descripción · <strong>{PLANILLA}</strong> N° planilla · <strong>{ZONA}</strong> · <strong>{HORA}</strong> hora de ingreso · <strong>{MINUTOS}</strong> minutos de tardanza · <strong>{COMPARTIDO}</strong> compañeros involucrados</p>
           <div class="form-grid">
             <div class="field"><label>📦 Producto perdido</label><textarea id="cfgMsgProducto" rows="5" style="text-transform:none!important"></textarea></div>
             <div class="field"><label>🚨 Faltante de liquidación</label><textarea id="cfgMsgFaltante" rows="5" style="text-transform:none!important"></textarea></div>
@@ -1801,8 +1804,11 @@ function createIncident(){
   });
   saveData(data);
   const zoneNameStr=zoneName(zone);
+  const allNames=selectedUsers.map(u=>data.users[u]?data.users[u].name:u);
   selectedUsers.forEach(su=>{
     const suName=data.users[su]?data.users[su].name:su;
+    const otherNames=allNames.filter(n=>n!==suName);
+    const compartidoCon=otherNames.length>0?otherNames.join(', '):'Solo usted';
     sendWhatsApp('msgProducto',{
       nombre:suName,
       monto:fmtMoney(perWorkerAmount),
@@ -1810,6 +1816,7 @@ function createIncident(){
       producto:desc,
       planilla:planilla||'—',
       zona:zoneNameStr,
+      compartido:compartidoCon,
       targetUsername:su
     });
   });
@@ -2049,6 +2056,8 @@ function renderConfig(){
   loadWhatsappConfigUI();
   if(document.getElementById('cfgWaPhoneId')) document.getElementById('cfgWaPhoneId').value=c.waPhoneId||'';
   if(document.getElementById('cfgWaToken')) document.getElementById('cfgWaToken').value=c.waToken||'';
+  if(document.getElementById('cfgCloudKey')) document.getElementById('cfgCloudKey').value=c.cloudKey||'';
+  if(document.getElementById('cfgCloudBin')) document.getElementById('cfgCloudBin').value=c.cloudBin||'';
 }
 function saveCompanyConfig(){
   const data=getData();
@@ -2502,7 +2511,8 @@ function sendWhatsApp(templateKey, vars){
     .replace(/{PLANILLA}/g, vars.planilla||'—')
     .replace(/{ZONA}/g, vars.zona||'—')
     .replace(/{HORA}/g, vars.hora||'—')
-    .replace(/{MINUTOS}/g, vars.minutos||'0');
+    .replace(/{MINUTOS}/g, vars.minutos||'0')
+    .replace(/{COMPARTIDO}/g, vars.compartido||'Solo usted');
   const encoded=encodeURIComponent(msg);
   const phone=vars.targetUsername&&data.users[vars.targetUsername]?(data.users[vars.targetUsername].whatsapp||''):'';
   // 1) Intentar envío 100% automático vía Cloud API
@@ -2618,11 +2628,121 @@ window.addEventListener('load',()=>{
   }
 });
 
+
+/* ─── EXPORTAR TRABAJADORES A EXCEL ─── */
+function exportUsersExcel(){
+  if(!window.XLSX){alert('Se requiere conexión a internet para cargar la librería de Excel.');return;}
+  const data=getData();
+  const header=['Usuario','Contraseña','Nombre completo','Rol','N° WhatsApp','Ubicación asignada','Sueldo base','AFP','Hora inicio','Estado'];
+  const rows=[header];
+  Object.values(data.users).forEach(u=>{
+    const sched=getEffectiveSchedule(u);
+    rows.push([
+      u.username,
+      u.password,
+      u.name,
+      ROLES[u.role]||u.role,
+      u.whatsapp||'',
+      locationName(u.assignedLocationId),
+      u.baseSalary,
+      u.afpApplies===false?'No':'Sí',
+      timeStrFromMinutes(sched.workStartMinutes)+(u.customWorkStart?' (personalizado)':''),
+      u.active?'Activo':'Inactivo'
+    ]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:14},{wch:28},{wch:20},{wch:14},{wch:24},{wch:12},{wch:6},{wch:18},{wch:10}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Trabajadores');
+  XLSX.writeFile(wb,'trabajadores_'+new Date().toISOString().split('T')[0]+'.xlsx');
+}
+
+/* ─── RESPALDO LOCAL: exportar/importar JSON ─── */
+function exportBackup(){
+  const data=getData();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='respaldo_asistencias_'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();URL.revokeObjectURL(url);
+}
+function importBackup(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  if(!confirm('⚠️ ADVERTENCIA: Esto reemplazará TODOS los datos actuales (usuarios, asistencias, incidencias, etc.) con los datos del respaldo. ¿Continuar?'))return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const imported=JSON.parse(e.target.result);
+      if(!imported.users||!imported.config){alert('El archivo no es un respaldo válido.');return;}
+      saveData(imported);
+      alert('✅ Respaldo importado correctamente. La página se recargará.');
+      location.reload();
+    }catch(err){alert('Error al leer el archivo: '+err.message);}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+/* ─── SINCRONIZACIÓN NUBE: JSONBin.io ─── */
+function saveCloudConfig(){
+  const data=getData();
+  data.config.cloudKey=document.getElementById('cfgCloudKey').value.trim();
+  data.config.cloudBin=document.getElementById('cfgCloudBin').value.trim();
+  saveData(data);
+  showAlertOn('configAlert','Conexión de nube guardada','success');
+}
+async function cloudPush(){
+  const data=getData();
+  const key=data.config.cloudKey, bin=data.config.cloudBin;
+  if(!key||!bin){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Primero configura la API Key y el Bin ID.</div>';return;}
+  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Subiendo datos…</div>';
+  try{
+    const res=await fetch(`https://api.jsonbin.io/v3/b/${bin}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':key},
+      body:JSON.stringify(data)
+    });
+    const j=await res.json();
+    document.getElementById('cloudStatus').innerHTML=res.ok
+      ?'<div class="alert alert-success"><span class="alert-icon">✅</span>Datos subidos a la nube correctamente.</div>'
+      :`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${j.message||JSON.stringify(j)}</div>`;
+  }catch(err){
+    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error de conexión: ${err.message}</div>`;
+  }
+}
+async function cloudPull(){
+  const data=getData();
+  const key=data.config.cloudKey, bin=data.config.cloudBin;
+  if(!key||!bin){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Primero configura la API Key y el Bin ID.</div>';return;}
+  if(!confirm('⚠️ Esto reemplazará los datos locales con los de la nube. ¿Continuar?'))return;
+  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Descargando datos…</div>';
+  try{
+    const res=await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`,{
+      headers:{'X-Master-Key':key}
+    });
+    const j=await res.json();
+    if(res.ok&&j.record&&j.record.users){
+      const cloudKey=j.record.config.cloudKey||key;
+      const cloudBin=j.record.config.cloudBin||bin;
+      j.record.config.cloudKey=cloudKey;
+      j.record.config.cloudBin=cloudBin;
+      saveData(j.record);
+      document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos descargados. La página se recargará.</div>';
+      setTimeout(()=>location.reload(),1500);
+    }else{
+      document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${j.message||'Datos no válidos'}</div>`;
+    }
+  }catch(err){
+    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error de conexión: ${err.message}</div>`;
+  }
+}
+
 /* ---------- INIT ---------- */
 document.addEventListener('DOMContentLoaded',()=>{ initData(); tickClock(); });
 
 /* ── Forzar mayúsculas en todos los inputs EXCEPTO usuario y contraseña ── */
-const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp'];
+const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp','cfgCloudKey','cfgCloudBin','cfgWaPhoneId','cfgWaToken'];
 document.addEventListener('input',function(e){
   const t=e.target;
   if(SKIP_UPPERCASE.includes(t.id)) return;
