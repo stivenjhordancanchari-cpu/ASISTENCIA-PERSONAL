@@ -509,6 +509,61 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
 .supabase-setup-banner h3{font-size:1rem;margin-bottom:6px}
 .supabase-setup-banner p{font-size:.8rem;opacity:.9;margin-bottom:12px}
 
+
+/* ── Círculo facial estilo Jibble ── */
+.face-circle-wrap{
+  position:relative;width:280px;max-width:80vw;aspect-ratio:1/1;margin:0 auto;
+}
+.face-circle-video{
+  width:100%;height:100%;object-fit:cover;border-radius:50%;
+  background:#000;display:block;
+  border:4px solid var(--brand);
+}
+.face-circle-ring{
+  position:absolute;inset:-8px;border-radius:50%;
+  border:4px dashed rgba(255,255,255,.6);pointer-events:none;
+  animation:spin 8s linear infinite;
+}
+.face-circle-ring.ok{border-color:#16A34A;animation:none;border-style:solid}
+.face-circle-ring.fail{border-color:#DC2626;animation:none;border-style:solid}
+.face-circle-ring.wait{border-color:#F59E0B}
+@keyframes spin{100%{transform:rotate(360deg)}}
+.face-instruction{
+  text-align:center;font-size:.9rem;font-weight:600;
+  padding:12px 16px;margin-top:16px;border-radius:var(--radius);
+  background:var(--brand-light);color:var(--brand-dark);
+}
+.face-instruction.err{background:#FEE2E2;color:#7F1D1D}
+.face-instruction.ok{background:#DCFCE7;color:#14532D}
+.face-instruction .step{font-size:.7rem;opacity:.75;margin-top:4px}
+
+/* ── Buscador nómina ── */
+.search-input{
+  padding:9px 12px 9px 36px;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:.85rem;background:var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748B'><path d='M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/></svg>") no-repeat 10px center;
+  background-size:16px;
+}
+/* ── Celda clickable ── */
+.clickable-cell{cursor:pointer;color:var(--brand);text-decoration:underline dotted;font-weight:600}
+.clickable-cell:hover{opacity:.7}
+
+/* ── Modal detalle profesional ── */
+.detail-modal-body{max-height:60vh;overflow-y:auto}
+.detail-summary{
+  background:linear-gradient(135deg,var(--brand-light),#EFF6FF);
+  border-left:4px solid var(--brand);padding:14px 18px;border-radius:var(--radius);
+  margin-bottom:16px;
+}
+.detail-summary .label{font-size:.7rem;color:var(--txt-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.detail-summary .value{font-size:1.3rem;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums}
+.detail-item{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;margin-bottom:8px;
+}
+.detail-item .row{display:flex;justify-content:space-between;padding:3px 0;font-size:.8rem}
+.detail-item .row .k{color:var(--txt-soft)}
+.detail-item .row .v{font-weight:600;color:var(--txt);text-align:right}
+
 /* ───── UTILITY ───── */
 .mt{margin-top:16px}.mt2{margin-top:8px}.mb{margin-bottom:16px}
 .flex{display:flex}.gap{gap:8px}.items-center{align-items:center}
@@ -683,10 +738,13 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
         <div class="status-pill sp-wait" id="faceStatusPill">🙂 Verificando rostro…</div>
       </div>
 
-      <!-- Cámara oculta pero funcional -->
-      <video id="faceVideo" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" autoplay muted playsinline></video>
+      <!-- Círculo de reconocimiento facial -->
+      <div class="face-circle-wrap" id="checkinFaceWrap" style="display:none;margin-bottom:16px">
+        <video id="faceVideo" class="face-circle-video" autoplay muted playsinline></video>
+        <div class="face-circle-ring" id="checkinFaceRing"></div>
+      </div>
+      <div id="faceResult" style="max-width:400px;margin:0 auto 12px"></div>
       <div id="geoResult" style="display:none"></div>
-      <div id="faceResult" style="display:none"></div>
 
       <!-- Botones de marcar -->
       <div class="mark-buttons">
@@ -888,9 +946,15 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
           <button class="btn btn-ghost btn-sm" onclick="exportAllPayslipsExcel()">📊 Excel general</button>
         </div>
       </div>
-      <div class="field" style="max-width:220px;margin-bottom:20px">
-        <label>Mes</label>
-        <input type="month" id="payrollAllMonth" onchange="renderPayrollAll()">
+      <div class="filters-row">
+        <div class="field" style="max-width:220px">
+          <label>Mes</label>
+          <input type="month" id="payrollAllMonth" onchange="renderPayrollAll()">
+        </div>
+        <div class="field" style="max-width:280px">
+          <label>Buscar</label>
+          <input type="text" id="payrollAllSearch" class="search-input" placeholder="Nombre o rol…" oninput="renderPayrollAll()">
+        </div>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -1122,7 +1186,6 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
           </div>
           <div class="field"><label>Ubicación asignada</label><select id="fLocation"><option value="">Sin asignar</option></select></div>
           <div class="field"><label>Sueldo base mensual (S/.)</label><input type="number" id="fSalary" step="0.01" min="0" required placeholder="0.00"></div>
-          <div class="field"><label>Hora de inicio personalizada <span class="text-sm">(opcional)</span></label><input type="time" id="fCustomStart"></div>
           <div class="field" style="grid-column:1/-1"><label>📱 Número WhatsApp <span class="text-sm">(con código de país, ej: 51987654321)</span></label><input type="tel" id="fWhatsapp" placeholder="51987654321" style="text-transform:none!important" autocomplete="tel"></div>
         </div>
         <p class="text-sm mt2" id="scheduleHint">Selecciona un rol para ver su horario por defecto.</p>
@@ -1132,13 +1195,15 @@ button,.nav-item,.btn{touch-action:manipulation;min-height:42px}
         <div class="divider"></div>
         <div class="face-reg-box">
           <div class="face-reg-title">🙂 Registro de rostro <span id="faceRequiredMark" style="color:var(--danger);font-size:.72rem">(requerido para nuevo trabajador)</span></div>
-          <p class="text-sm">Toma una foto del trabajador con la cámara. El sistema la usará para verificar su identidad al marcar asistencia.</p>
-          <video id="regFaceVideo" class="face-reg-video" autoplay muted playsinline style="display:none"></video>
-          <div class="btn-group mt2">
-            <button class="btn btn-ghost btn-sm" type="button" onclick="startRegFace()">📷 Activar cámara</button>
-            <button class="btn btn-success btn-sm" type="button" onclick="captureRegFace()">✅ Capturar rostro</button>
+          <p class="text-sm">Al presionar "Capturar rostro" la cámara se activará automáticamente. Sigue las indicaciones en pantalla.</p>
+          <div class="face-circle-wrap" style="display:none" id="regFaceWrap">
+            <video id="regFaceVideo" class="face-circle-video" autoplay muted playsinline></video>
+            <div class="face-circle-ring" id="regFaceRing"></div>
           </div>
           <div id="regFaceStatus" class="mt2"></div>
+          <div class="btn-group mt2" style="justify-content:center">
+            <button class="btn btn-success" type="button" onclick="startRegFaceFlow()">📷 Capturar rostro</button>
+          </div>
         </div>
         <div class="btn-group mt" style="justify-content:flex-end">
           <button type="button" class="btn btn-danger" id="fDeleteBtn" onclick="deleteUser()" style="display:none">🗑️ Eliminar</button>
@@ -1414,41 +1479,117 @@ function stopRegFace(){
   if(regFaceStream){regFaceStream.getTracks().forEach(t=>t.stop());regFaceStream=null;}
   const v=document.getElementById('regFaceVideo'); if(v){v.style.display='none';v.srcObject=null;}
 }
-async function captureRegFace(){
-  const video=document.getElementById('regFaceVideo');
-  document.getElementById('regFaceStatus').innerHTML='<div class="verify-status vs-wait">⏳ Analizando rostro… Por favor mantente quieto.</div>';
-  const res=await getFaceDescriptorFromVideo(video);
-  if(res.error){
-    document.getElementById('regFaceStatus').innerHTML=`<div class="verify-status vs-fail">❌ ${res.error}</div>`;
-    return;
-  }
-  pendingFaceDescriptor=res.descriptor;
-  document.getElementById('regFaceStatus').innerHTML='<div class="verify-status vs-ok">✅ Rostro capturado correctamente. Ya puedes guardar.</div>';
+function setRegRing(state){
+  const ring=document.getElementById('regFaceRing');
+  if(!ring)return;
+  ring.classList.remove('ok','fail','wait');
+  if(state) ring.classList.add(state);
+}
+function setRegInstruction(text,step,type){
+  document.getElementById('regFaceStatus').innerHTML=
+    `<div class="face-instruction${type?' '+type:''}">${text}${step?'<div class="step">'+step+'</div>':''}</div>`;
 }
 
+async function startRegFaceFlow(){
+  // Paso 1: Activar cámara si no lo está
+  const wrap=document.getElementById('regFaceWrap');
+  const video=document.getElementById('regFaceVideo');
+  wrap.style.display='block';
+  setRegInstruction('Iniciando cámara…','Espera un momento','');
+  setRegRing('wait');
+  if(!regFaceStream){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      setRegInstruction('Cámara no disponible en este dispositivo','','err');
+      return;
+    }
+    try{
+      regFaceStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+      video.srcObject=regFaceStream;
+      await new Promise(r=>video.onloadeddata=r);
+    }catch(e){
+      setRegInstruction('No se pudo activar la cámara','Revisa los permisos en tu navegador','err');
+      return;
+    }
+  }
+  // Paso 2: Detectar rostro centrado (3 tomas para más precisión)
+  const captures=[];
+  const steps=[
+    {msg:'Mira de frente a la cámara',sub:'Paso 1 de 3 · Rostro centrado'},
+    {msg:'Ahora sonríe ligeramente',sub:'Paso 2 de 3 · Con expresión natural'},
+    {msg:'Última toma, mira de frente',sub:'Paso 3 de 3 · Casi listo'}
+  ];
+  for(let i=0;i<steps.length;i++){
+    setRegInstruction(steps[i].msg,steps[i].sub,'');
+    setRegRing('wait');
+    // Esperar 2 segundos antes de cada captura
+    await new Promise(r=>setTimeout(r,2000));
+    setRegInstruction('Capturando…','Mantente quieto','');
+    const res=await getFaceDescriptorFromVideo(video);
+    if(res.error){
+      setRegRing('fail');
+      setRegInstruction('No se detectó rostro',res.error+' · Intenta de nuevo','err');
+      // Reintentar el mismo paso
+      i--;
+      await new Promise(r=>setTimeout(r,1500));
+      continue;
+    }
+    captures.push(res.descriptor);
+    setRegRing('ok');
+    setRegInstruction('✅ Toma '+(i+1)+' capturada','',(i<steps.length-1)?'':'ok');
+    await new Promise(r=>setTimeout(r,600));
+  }
+  // Promediar los 3 descriptores
+  const avg=new Array(captures[0].length).fill(0);
+  captures.forEach(desc=>desc.forEach((v,j)=>avg[j]+=v));
+  for(let i=0;i<avg.length;i++) avg[i]/=captures.length;
+  pendingFaceDescriptor=avg;
+  setRegRing('ok');
+  setRegInstruction('✅ Rostro registrado correctamente','Ya puedes guardar el trabajador','ok');
+}
+// Compat
+async function captureRegFace(){ return startRegFaceFlow(); }
+
 /* Verificación facial en pantalla de asistencia (con auto-inicio) */
+function setCheckinRing(state){
+  const ring=document.getElementById('checkinFaceRing');
+  if(!ring)return;
+  ring.classList.remove('ok','fail','wait');
+  if(state) ring.classList.add(state);
+}
+function setCheckinInstruction(text,sub,type){
+  const el=document.getElementById('faceResult');
+  if(el) el.innerHTML=`<div class="face-instruction${type?' '+type:''}">${text}${sub?'<div class="step">'+sub+'</div>':''}</div>`;
+}
 function startFace(){
   const video=document.getElementById('faceVideo');
+  const wrap=document.getElementById('checkinFaceWrap');
+  if(wrap) wrap.style.display='block';
   faceAutoTried=false;
+  setCheckinRing('wait');
+  setCheckinInstruction('Iniciando cámara…','Coloca tu rostro dentro del círculo','');
   if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-    navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
-      faceStream=stream;video.srcObject=stream;video.style.display='block';
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}}).then(stream=>{
+      faceStream=stream;video.srcObject=stream;
       video.onloadeddata=()=>{
         if(!faceAutoTried){
           faceAutoTried=true;
-          setTimeout(()=>{ if(!faceConfirmed) verifyFaceReal(); },900);
+          setCheckinInstruction('Mira de frente a la cámara','Mantén tu rostro dentro del círculo','');
+          setTimeout(()=>{ if(!faceConfirmed) verifyFaceReal(); },1200);
         }
       };
     }).catch(()=>{
-      document.getElementById('faceResult').innerHTML='<div class="verify-status vs-fail">No se pudo acceder a la cámara. Revisa los permisos del navegador e intenta de nuevo.</div>';
+      setCheckinRing('fail');
+      setCheckinInstruction('No se pudo acceder a la cámara','Revisa los permisos del navegador','err');
     });
   }else{
-    document.getElementById('faceResult').innerHTML='<div class="verify-status vs-fail">Cámara no disponible en este dispositivo.</div>';
+    setCheckinRing('fail');
+    setCheckinInstruction('Cámara no disponible','Este dispositivo no tiene cámara','err');
   }
 }
 function stopFace(){
   if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}
-  const v=document.getElementById('faceVideo'); if(v){v.style.display='none';v.srcObject=null;v.onloadeddata=null;}
+  const v=document.getElementById('faceVideo'); if(v){v.srcObject=null;v.onloadeddata=null;}
+  const wrap=document.getElementById('checkinFaceWrap'); if(wrap) wrap.style.display='none';
   faceConfirmed=false;faceAutoTried=false;
 }
 async function verifyFaceReal(){
@@ -1470,10 +1611,12 @@ async function verifyFaceReal(){
   const dist=faceapi.euclideanDistance(res.descriptor,currentUser.faceDescriptor);
   if(dist<FACE_MATCH_THRESHOLD){
     faceConfirmed=true;updateStatusPills();
-    document.getElementById('faceResult').innerHTML='<div class="verify-status vs-ok">✅ Rostro verificado — ya puedes marcar tu asistencia</div>';
+    setCheckinRing('ok');
+    setCheckinInstruction('✅ Rostro verificado','Ya puedes marcar tu asistencia','ok');
   }else{
     faceConfirmed=false;updateStatusPills();
-    document.getElementById('faceResult').innerHTML='<div class="verify-status vs-fail">❌ Rostro no reconocido. Intenta de nuevo con mejor iluminación y mirando de frente a la cámara.</div>';
+    setCheckinRing('fail');
+    setCheckinInstruction('❌ Rostro no reconocido','Verifica que seas tú · Mira de frente · Buena iluminación','err');
   }
 }
 
@@ -1557,22 +1700,7 @@ function registerAttendance(type){
   }
   data.attendance.push({user:currentUser.username,date:today,time:now.toLocaleTimeString('es-ES'),type,timestamp:now.getTime(),location:lastGeoLocationName});
   saveData(data);
-  // Detectar tardanza al marcar entrada y enviar WhatsApp automático
-  if(type==='in'){
-    const sched=getEffectiveSchedule(currentUser);
-    const checkinMin=now.getHours()*60+now.getMinutes();
-    const toleranceEnd=sched.workStartMinutes+sched.toleranceMinutes;
-    const lateMin=checkinMin-toleranceEnd;
-    if(lateMin>0){
-      sendWhatsApp('msgTardanza',{
-        nombre:currentUser.name,
-        fecha:today,
-        hora:now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
-        minutos:String(lateMin),
-        targetUsername:currentUser.username
-      });
-    }
-  }
+  // Nota: notificación de tardanza deshabilitada por solicitud del usuario
   showAlertOn('checkinAlert',`✅ ${type==='in'?'Entrada':'Salida'} registrada correctamente en "${lastGeoLocationName}"`,'success');
   stopFace();lastGeoOk=false;lastGeoLocationName='';
   document.getElementById('geoResult').innerHTML='';document.getElementById('faceResult').innerHTML='';
@@ -1698,6 +1826,10 @@ function renderMyPayroll(){
   document.getElementById('payrollDetail').innerHTML=payrollHtml(p);
 }
 function payrollHtml(p){
+  const uname=p.user.username;
+  const val=document.getElementById('payrollMonth')?document.getElementById('payrollMonth').value:new Date().toISOString().substring(0,7);
+  const [yy,mm]=val.split('-').map(Number);
+
   // helper local
   const row=(label,val,cls='')=>`<tr><td>${label}</td><td class="${cls}">${val}</td></tr>`;
   const srow=(label)=>`<tr class="section-row"><td colspan="2">${label}</td></tr>`;
@@ -1709,17 +1841,17 @@ function payrollHtml(p){
   html+=row('Minutos de tardanza acumulados (mes)',fmtMinutes(p.tardinessMinutes),'neg-val');
   html+=srow('⏱ Horas extra');
   html+=row('Minutos extra acumulados (después de hora de salida)',fmtMinutes(p.extraMinutes));
-  html+=row('Horas extra netas (extra − tardanza)',`${fmtMoney(p.overtimePay)} (${fmtMinutes(p.overtimeNetMinutes)})`,'pos-val');
+  html+=`<tr><td>Horas extra netas (extra − tardanza)</td><td class="pos-val"><span class="clickable-cell" onclick="showPayrollDetail('${uname}',${yy},${mm},'overtime')">${fmtMoney(p.overtimePay)} (${fmtMinutes(p.overtimeNetMinutes)})</span></td></tr>`;
   html+=srow('🎁 Bonos');
   if(p.user.role!=='CONTABILIDAD') html+=row('Bono asistencia perfecta',`+${fmtMoney(p.bonoAsistenciaPerfecta)}`,'pos-val');
   if(p.isAuxiliarBonus) html+=row('Bono cero pérdidas (productos)',`+${fmtMoney(p.bonoCeroPerdidas)}`,'pos-val');
   html+=srow('➖ Descuentos');
-  if(p.hasLossTracking) html+=row('Descuento productos perdidos',`−${fmtMoney(p.lostProductsTotal)}`,'neg-val');
-  html+=row('Descuento por tardanzas',`−${fmtMoney(p.descuentoTardanza)}`,'neg-val');
-  html+=row('Descuento por faltas',`−${fmtMoney(p.descuentoFaltas)}`,'neg-val');
+  if(p.hasLossTracking) html+=`<tr><td>Descuento productos perdidos</td><td class="neg-val"><span class="clickable-cell" onclick="showPayrollDetail('${uname}',${yy},${mm},'products')">−${fmtMoney(p.lostProductsTotal)}</span></td></tr>`;
+  html+=`<tr><td>Descuento por tardanzas</td><td class="neg-val"><span class="clickable-cell" onclick="showPayrollDetail('${uname}',${yy},${mm},'tardanza')">−${fmtMoney(p.descuentoTardanza)}</span></td></tr>`;
+  html+=`<tr><td>Descuento por faltas</td><td class="neg-val"><span class="clickable-cell" onclick="showPayrollDetail('${uname}',${yy},${mm},'faltas')">−${fmtMoney(p.descuentoFaltas)}</span></td></tr>`;
   html+=row(`Descuento AFP${p.descuentoAFP===0?' (no aplica)':''}`,`−${fmtMoney(p.descuentoAFP)}`,'neg-val');
-  if(p.user.role==='CONDUCTOR') html+=row('Descuento por falta de liquidación',`−${fmtMoney(p.liquidacionDescuentoTotal)}`,'neg-val');
-  html+=row('Adelantos',`−${fmtMoney(p.advancesTotal)}`,'neg-val');
+  if(p.user.role==='CONDUCTOR') html+=`<tr><td>Descuento por falta de liquidación</td><td class="neg-val"><span class="clickable-cell" onclick="showPayrollDetail('${uname}',${yy},${mm},'liquidacion')">−${fmtMoney(p.liquidacionDescuentoTotal)}</span></td></tr>`;
+  html+=`<tr><td>Adelantos</td><td class="neg-val"><span class="clickable-cell" onclick="showPayrollDetail('${uname}',${yy},${mm},'adelantos')">−${fmtMoney(p.advancesTotal)}</span></td></tr>`;
   html+=`<tr class="total-row"><td>💳 Total a pagar</td><td>${fmtMoney(p.totalPagar)}</td></tr>`;
   html+='</table></div>';
   return html;
@@ -1749,26 +1881,36 @@ function renderPayrollAll(){
   const val=document.getElementById('payrollAllMonth').value||new Date().toISOString().substring(0,7);
   const [y,m]=val.split('-').map(Number);
   const data=getData();
-  const rows=Object.keys(data.users).map(u=>{
-    const p=calcPayroll(u,y,m);
+  const search=((document.getElementById('payrollAllSearch')||{}).value||'').toLowerCase().trim();
+  let users=Object.values(data.users);
+  if(search) users=users.filter(u=>
+    (u.name||'').toLowerCase().includes(search) ||
+    (u.username||'').toLowerCase().includes(search) ||
+    (ROLES[u.role]||'').toLowerCase().includes(search) ||
+    (u.role||'').toLowerCase().includes(search)
+  );
+  const cell=(val,type,user)=>`<td><span class="clickable-cell" onclick="showPayrollDetail('${user}',${y},${m},'${type}')">${val}</span></td>`;
+  const rows=users.map(u=>{
+    const p=calcPayroll(u.username,y,m);
+    const un=u.username;
     return `<tr>
       <td>${p.user.name}</td>
-      <td><span class="badge badge-${p.user.role}">${ROLES[p.user.role]}</span></td>
-      <td>${fmtMoney(p.baseSalary)}</td>
-      <td class="pos">${fmtMoney(p.overtimePay)}</td>
-      <td class="pos">${fmtMoney(p.bonoAsistenciaPerfecta)}</td>
-      <td class="pos">${fmtMoney(p.bonoCeroPerdidas)}</td>
-      <td class="neg">${fmtMoney(p.hasLossTracking?p.lostProductsTotal:0)}</td>
-      <td class="neg">${fmtMoney(p.descuentoTardanza)}</td>
-      <td class="neg">${fmtMoney(p.descuentoFaltas)}</td>
-      <td class="neg">${fmtMoney(p.descuentoAFP)}</td>
-      <td class="neg">${fmtMoney(p.liquidacionDescuentoTotal)}</td>
-      <td class="neg">${fmtMoney(p.advancesTotal)}</td>
-      <td><strong>${fmtMoney(p.totalPagar)}</strong></td>
-      <td><button class="btn btn-ghost btn-sm" onclick="exportPayslipPDF('${u}',${y},${m})">PDF</button></td>
+      <td><span class="chip chip-${p.user.role}">${ROLES[p.user.role]}</span></td>
+      <td class="money">${fmtMoney(p.baseSalary)}</td>
+      ${cell(fmtMoney(p.overtimePay),'overtime',un)}
+      <td class="money pos">${fmtMoney(p.bonoAsistenciaPerfecta)}</td>
+      <td class="money pos">${fmtMoney(p.bonoCeroPerdidas)}</td>
+      ${cell(fmtMoney(p.hasLossTracking?p.lostProductsTotal:0),'products',un)}
+      ${cell(fmtMoney(p.descuentoTardanza),'tardanza',un)}
+      ${cell(fmtMoney(p.descuentoFaltas),'faltas',un)}
+      <td class="money neg">${fmtMoney(p.descuentoAFP)}</td>
+      ${cell(fmtMoney(p.liquidacionDescuentoTotal),'liquidacion',un)}
+      ${cell(fmtMoney(p.advancesTotal),'adelantos',un)}
+      <td class="money"><strong>${fmtMoney(p.totalPagar)}</strong></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="exportPayslipPDF('${un}',${y},${m})">📄 PDF</button></td>
     </tr>`;
   }).join('');
-  document.getElementById('payrollAllTable').innerHTML=rows||'<tr><td colspan="14" class="empty-state"><div class="empty-icon">📊</div>Sin usuarios registrados</td></tr>';
+  document.getElementById('payrollAllTable').innerHTML=rows||'<tr><td colspan="14" class="empty-state"><div class="empty-icon">📊</div>Sin resultados</td></tr>';
 }
 
 /* ---------- ADELANTOS (solo Gerente asigna) ---------- */
@@ -2047,7 +2189,7 @@ function openUserModal(){
   document.getElementById('fPassword').value='';document.getElementById('fPassword').placeholder='';document.getElementById('fPassword').type='password';
   document.getElementById('fName').value='';
   document.getElementById('fRole').value='';document.getElementById('fSalary').value='';
-  document.getElementById('fCustomStart').value='';
+  var _cs=document.getElementById('fCustomStart'); if(_cs) _cs.value='';
   document.getElementById('fWhatsapp').value='';
   document.getElementById('fDni').value='';
   populateLocationSelect('');
@@ -2069,7 +2211,7 @@ function editUser(username){
   document.getElementById('fPassword').value='';document.getElementById('fPassword').placeholder='Dejar en blanco para no cambiar';document.getElementById('fPassword').type='password';
   document.getElementById('fName').value=u.name;
   document.getElementById('fRole').value=u.role;document.getElementById('fSalary').value=u.baseSalary;
-  document.getElementById('fCustomStart').value=u.customWorkStart||'';
+  var _cs=document.getElementById('fCustomStart'); if(_cs) _cs.value=u.customWorkStart||'';
   document.getElementById('fWhatsapp').value=u.whatsapp||'';
   document.getElementById('fDni').value=u.dni||'';
   populateLocationSelect(u.assignedLocationId||'');
@@ -2092,7 +2234,7 @@ function saveUser(e){
   const name=document.getElementById('fName').value.trim();
   const role=document.getElementById('fRole').value;
   const salary=Number(document.getElementById('fSalary').value);
-  const customWorkStart=document.getElementById('fCustomStart').value;
+  const customWorkStart=(document.getElementById('fCustomStart')||{}).value||'';
   const assignedLocationId=document.getElementById('fLocation').value;
   const afpApplies=document.getElementById('fAfpApplies').checked;
   const active=document.getElementById('fActive').checked;
@@ -2645,6 +2787,168 @@ function sendWhatsApp(templateKey, vars){
   }
 }
 
+
+
+/* ─── DETALLE DE COMPONENTES DE NÓMINA ─── */
+function closeDetailModal(){
+  document.getElementById('detailModal').classList.remove('open');
+}
+function showPayrollDetail(username,year,month,type){
+  const data=getData();
+  const user=data.users[username];
+  if(!user)return;
+  const monthStr=`${year}-${pad2(month)}`;
+  const p=calcPayroll(username,year,month);
+  const body=document.getElementById('detailModalBody');
+  const title=document.getElementById('detailModalTitle');
+  let html='';
+  const fmtDate=d=>new Date(d+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'});
+
+  if(type==='overtime'){
+    title.textContent='Horas Extra — '+user.name;
+    // Recalcular por día
+    const logs=data.attendance.filter(l=>l.user===username&&l.date.startsWith(monthStr));
+    const byDate={};
+    logs.forEach(l=>{(byDate[l.date]=byDate[l.date]||[]).push(l);});
+    const sched=getEffectiveSchedule(user);
+    let items='';
+    Object.keys(byDate).sort().forEach(date=>{
+      const dl=byDate[date];
+      const outLog=dl.find(l=>l.type==='out');
+      if(outLog){
+        const outMin=new Date(outLog.timestamp).getHours()*60+new Date(outLog.timestamp).getMinutes();
+        const extra=Math.max(0,outMin-sched.exitMinutes);
+        if(extra>0){
+          items+=`<div class="detail-item">
+            <div class="row"><span class="k">📅 Fecha</span><span class="v">${fmtDate(date)}</span></div>
+            <div class="row"><span class="k">🕐 Hora salida</span><span class="v">${outLog.time}</span></div>
+            <div class="row"><span class="k">⏱ Minutos extra</span><span class="v">${extra} min</span></div>
+          </div>`;
+        }
+      }
+    });
+    html=`<div class="detail-summary">
+      <div class="label">Total horas extra netas del mes</div>
+      <div class="value">${fmtMinutes(p.overtimeNetMinutes)}</div>
+      <div class="label" style="margin-top:8px">Fórmula: (Minutos extra) − (Minutos de tardanza) = ${p.extraMinutes} − ${p.tardinessMinutes} = ${p.overtimeNetMinutes} min</div>
+      <div class="label" style="margin-top:4px">Pago: ${fmtMoney(p.overtimePay)}</div>
+    </div>${items||'<p class="text-sm">Sin días con horas extra este mes.</p>'}`;
+  }
+  else if(type==='products'){
+    title.textContent='Productos Perdidos — '+user.name;
+    const list=data.incidents.filter(i=>i.user===username&&i.date.startsWith(monthStr));
+    let items='';
+    list.forEach(i=>{
+      let compartido='Solo él/ella';
+      if(i.groupId&&i.sharedCount>1){
+        const partners=data.incidents.filter(x=>x.groupId===i.groupId&&x.user!==username)
+          .map(x=>data.users[x.user]?data.users[x.user].name:x.user);
+        compartido=partners.length?partners.join(', '):'—';
+      }
+      items+=`<div class="detail-item">
+        <div class="row"><span class="k">📦 Producto</span><span class="v">${i.description||'—'}</span></div>
+        <div class="row"><span class="k">📅 Fecha</span><span class="v">${fmtDate(i.date)}</span></div>
+        <div class="row"><span class="k">📍 Zona</span><span class="v">${zoneName(i.zone)}</span></div>
+        <div class="row"><span class="k">📋 N° Planilla</span><span class="v">${i.planilla||'—'}</span></div>
+        <div class="row"><span class="k">👥 Compartido con</span><span class="v">${compartido}</span></div>
+        <div class="row"><span class="k">💵 Monto (su parte)</span><span class="v" style="color:var(--danger)">${fmtMoney(i.amount)}</span></div>
+      </div>`;
+    });
+    html=`<div class="detail-summary">
+      <div class="label">Total descontado por productos</div>
+      <div class="value" style="color:var(--danger)">${fmtMoney(p.lostProductsTotal)}</div>
+    </div>${items||'<p class="text-sm">Sin productos perdidos este mes.</p>'}`;
+  }
+  else if(type==='tardanza'){
+    title.textContent='Tardanzas — '+user.name;
+    const logs=data.attendance.filter(l=>l.user===username&&l.date.startsWith(monthStr)&&l.type==='in');
+    const sched=getEffectiveSchedule(user);
+    const toleranceEnd=sched.workStartMinutes+sched.toleranceMinutes;
+    let items='';
+    logs.forEach(l=>{
+      const d=new Date(l.timestamp);
+      const min=d.getHours()*60+d.getMinutes();
+      const late=min-toleranceEnd;
+      if(late>0){
+        items+=`<div class="detail-item">
+          <div class="row"><span class="k">📅 Fecha</span><span class="v">${fmtDate(l.date)}</span></div>
+          <div class="row"><span class="k">🕐 Hora ingreso</span><span class="v">${l.time}</span></div>
+          <div class="row"><span class="k">⏱ Minutos tarde</span><span class="v" style="color:var(--danger)">${late} min</span></div>
+          <div class="row"><span class="k">💵 Descuento</span><span class="v" style="color:var(--danger)">${fmtMoney(late*data.config.tarifaTardanzaPorMinuto)}</span></div>
+        </div>`;
+      }
+    });
+    html=`<div class="detail-summary">
+      <div class="label">Total minutos de tardanza</div>
+      <div class="value" style="color:var(--danger)">${fmtMinutes(p.tardinessMinutes)}</div>
+      <div class="label" style="margin-top:8px">Total descontado: ${fmtMoney(p.descuentoTardanza)}</div>
+    </div>${items||'<p class="text-sm">Sin tardanzas este mes. 🎉</p>'}`;
+  }
+  else if(type==='faltas'){
+    title.textContent='Faltas — '+user.name;
+    const daysInMonth=new Date(year,month,0).getDate();
+    const now=new Date();
+    const isCurrent=(now.getFullYear()===year&&now.getMonth()+1===month);
+    const lastDay=isCurrent?now.getDate():daysInMonth;
+    let items='',faltas=0;
+    for(let d=1;d<=lastDay;d++){
+      const ds=`${monthStr}-${pad2(d)}`;
+      if(isSunday(ds)) continue;
+      const dayLogs=data.attendance.filter(l=>l.user===username&&l.date===ds);
+      const hasIn=dayLogs.some(l=>l.type==='in');
+      const hasOut=dayLogs.some(l=>l.type==='out');
+      if(!hasIn||!hasOut){
+        faltas++;
+        items+=`<div class="detail-item">
+          <div class="row"><span class="k">📅 Fecha</span><span class="v">${fmtDate(ds)}</span></div>
+          <div class="row"><span class="k">Estado</span><span class="v" style="color:var(--danger)">${!hasIn?'Sin marcar entrada':'Sin marcar salida'}</span></div>
+        </div>`;
+      }
+    }
+    html=`<div class="detail-summary">
+      <div class="label">Total faltas del mes</div>
+      <div class="value" style="color:var(--danger)">${p.faltas} día(s)</div>
+      <div class="label" style="margin-top:8px">Total descontado: ${fmtMoney(p.descuentoFaltas)}</div>
+    </div>${items||'<p class="text-sm">Sin faltas este mes. 🎉</p>'}`;
+  }
+  else if(type==='liquidacion'){
+    title.textContent='Faltantes de Liquidación — '+user.name;
+    const list=data.otherDiscounts.filter(dd=>dd.user===username&&dd.date.startsWith(monthStr));
+    let items='';
+    list.forEach(dd=>{
+      items+=`<div class="detail-item">
+        <div class="row"><span class="k">📅 Fecha</span><span class="v">${fmtDate(dd.date)}</span></div>
+        <div class="row"><span class="k">📍 Zona</span><span class="v">${zoneName(dd.zone)}</span></div>
+        <div class="row"><span class="k">📋 N° Planilla</span><span class="v">${dd.planilla||'—'}</span></div>
+        <div class="row"><span class="k">💵 Monto</span><span class="v" style="color:var(--danger)">${fmtMoney(dd.amount)}</span></div>
+      </div>`;
+    });
+    html=`<div class="detail-summary">
+      <div class="label">Total faltantes del mes</div>
+      <div class="value" style="color:var(--danger)">${fmtMoney(p.liquidacionDescuentoTotal)}</div>
+    </div>${items||'<p class="text-sm">Sin faltantes este mes.</p>'}`;
+  }
+  else if(type==='adelantos'){
+    title.textContent='Adelantos — '+user.name;
+    const list=data.advances.filter(a=>a.user===username&&a.date.startsWith(monthStr));
+    let items='';
+    list.forEach(a=>{
+      items+=`<div class="detail-item">
+        <div class="row"><span class="k">📅 Fecha del adelanto</span><span class="v">${fmtDate(a.date)}</span></div>
+        <div class="row"><span class="k">📝 Motivo</span><span class="v">${a.reason||'A cuenta'}</span></div>
+        <div class="row"><span class="k">💵 Monto</span><span class="v" style="color:var(--danger)">${fmtMoney(a.amount)}</span></div>
+        <div class="row"><span class="k">⏰ Registrado</span><span class="v">${a.requestedAt?new Date(a.requestedAt).toLocaleString('es-PE'):'—'}</span></div>
+      </div>`;
+    });
+    html=`<div class="detail-summary">
+      <div class="label">Total adelantos del mes</div>
+      <div class="value" style="color:var(--danger)">${fmtMoney(p.advancesTotal)}</div>
+    </div>${items||'<p class="text-sm">Sin adelantos este mes.</p>'}`;
+  }
+
+  body.innerHTML=html;
+  document.getElementById('detailModal').classList.add('open');
+}
 
 /* ─── DETECCIÓN AUTOMÁTICA DE FALTAS: envía WhatsApp al trabajador ─── */
 function checkAndNotifyMissedDays(){
