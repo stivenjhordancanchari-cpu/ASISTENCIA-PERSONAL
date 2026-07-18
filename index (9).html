@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1">
-<meta name="theme-color" content="#166534">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no, viewport-fit=cover">
+<meta name="theme-color" content="#1D4ED8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DISAM">
 <meta name="application-name" content="DISAM">
-<meta name="msapplication-TileColor" content="#166534">
+<meta name="msapplication-TileColor" content="#1D4ED8">
 <meta name="msapplication-TileImage" content="icon-144.png">
 <meta name="description" content="Sistema de control de asistencias y nomina DISAM. Calidad que te abastece.">
 <link rel="manifest" href="manifest.json">
@@ -25,7 +25,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ═══════════════════════════════════════
    DISAM DESIGN SYSTEM — v19
@@ -36,10 +35,10 @@
    animado + tarjetas con sombra suave consistente
 ═══════════════════════════════════════ */
 :root{
-  /* Verdes corporativos DISAM */
-  --g900:#14532D;--g800:#166534;--g700:#15803D;
-  --g600:#16A34A;--g500:#22C55E;--g400:#4ADE80;
-  --g100:#DCFCE7;--g50:#F0FDF4;
+  /* Azul app nativa — estilo DISAM moderno */
+  --g900:#1E3A5F;--g800:#1D4ED8;--g700:#2563EB;
+  --g600:#3B82F6;--g500:#60A5FA;--g400:#93C5FD;
+  --g100:#DBEAFE;--g50:#EFF6FF;
   /* Neutros */
   --n950:#030712;--n900:#111827;--n800:#1F2937;
   --n700:#374151;--n600:#4B5563;--n500:#6B7280;
@@ -49,21 +48,21 @@
   --success:#16A34A;--danger:#DC2626;--warn:#D97706;--info:#2563EB;
   --danger-bg:#FEF2F2;--warn-bg:#FFFBEB;--info-bg:#EFF6FF;
   /* Sidebar */
-  --sb-bg:linear-gradient(180deg,#14532D 0%,#166534 60%,#15803D 100%);
+  --sb-bg:linear-gradient(180deg,#1E3A5F 0%,#1D4ED8 60%,#2563EB 100%);
   --sb-w:248px;
   /* Layout */
   --topbar-h:60px;
-  --radius-sm:6px;--radius:10px;--radius-lg:14px;--radius-xl:20px;
-  --shadow-xs:0 1px 2px rgba(0,0,0,.05);
-  --shadow-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
-  --shadow:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
-  --shadow-md:0 10px 15px rgba(0,0,0,.08),0 4px 6px rgba(0,0,0,.05);
+  --radius-sm:8px;--radius:12px;--radius-lg:18px;--radius-xl:24px;
+  --shadow-xs:0 1px 3px rgba(0,0,0,.04);
+  --shadow-sm:0 2px 6px rgba(0,0,0,.06);
+  --shadow:0 4px 12px rgba(0,0,0,.08);
+  --shadow-md:0 8px 24px rgba(0,0,0,.10);
   --shadow-lg:0 20px 25px rgba(0,0,0,.10),0 10px 10px rgba(0,0,0,.04);
   --font:'Inter',system-ui,-apple-system,sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{font-size:14px;-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height:1.5;
+body{font-family:var(--font);background:#F0F4F8;color:var(--n900);line-height:1.5;
   display:flex;min-height:100dvh;-webkit-font-smoothing:antialiased}
 
 /* ── SCROLLBAR ── */
@@ -140,7 +139,7 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 .main-wrap{flex:1;margin-left:var(--sb-w);display:flex;flex-direction:column;min-height:100dvh}
 .topbar{
   height:var(--topbar-h);background:var(--white);
-  border-bottom:1px solid var(--n200);
+  border-bottom:none;
   padding:0 24px;display:flex;align-items:center;gap:12px;
   position:sticky;top:0;z-index:40;box-shadow:var(--shadow-xs);
 }
@@ -176,8 +175,8 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 /* ════════════════════════════════════
    CARDS
 ════════════════════════════════════ */
-.card{background:var(--white);border-radius:var(--radius-lg);
-  border:1px solid var(--n200);box-shadow:var(--shadow-xs);padding:20px}
+.card{background:var(--white);border-radius:var(--radius-xl);
+  border:none;box-shadow:var(--shadow-sm);padding:22px}
 .card-title{font-size:.82rem;font-weight:700;color:var(--n700);
   text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;
   display:flex;align-items:center;gap:6px}
@@ -187,17 +186,19 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 ════════════════════════════════════ */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:22px}
 .stat-card{
-  background:var(--white);border-radius:var(--radius-lg);
-  padding:18px 20px;border:1px solid var(--n200);box-shadow:var(--shadow-xs);
+  background:var(--white);border-radius:var(--radius-xl);
+  padding:20px 22px;border:none;box-shadow:var(--shadow-sm);
   position:relative;overflow:hidden;
+  transition:transform .15s,box-shadow .15s;
 }
+.stat-card:active{transform:scale(.98)}
 .stat-card::after{
   content:'';position:absolute;top:0;left:0;right:0;height:3px;
   background:var(--stat-color,var(--g600));
 }
 .stat-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.06em;color:var(--n400);margin-bottom:8px}
-.stat-val{font-size:1.9rem;font-weight:800;color:var(--n900);
+.stat-val{font-size:2.2rem;font-weight:800;color:var(--n900);
   line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .stat-sub{font-size:.7rem;color:var(--n400);margin-top:5px}
 .stat-icon{font-size:2rem;opacity:.07;position:absolute;bottom:12px;right:14px}
@@ -226,8 +227,8 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 .pos{color:var(--success)}.neg{color:var(--danger)}
 .clickable-cell{cursor:pointer;color:var(--info);text-decoration:underline dotted;font-weight:600}
 .clickable-cell:hover{opacity:.7}
-.empty-state{text-align:center;padding:48px 20px;color:var(--n400);font-size:.82rem}
-.empty-icon{font-size:2.5rem;margin-bottom:10px;opacity:.5}
+.empty-state{text-align:center;padding:60px 24px;color:var(--n400);font-size:.82rem}
+.empty-icon{font-size:3rem;margin-bottom:14px;opacity:.4}
 
 /* ════════════════════════════════════
    CHIPS / BADGES
@@ -253,7 +254,7 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:.75rem;font-weight:600;color:var(--n700)}
 .field input,.field select,.field textarea{
-  padding:9px 12px;border:1.5px solid var(--n200);border-radius:var(--radius);
+  padding:10px 14px;border:1.5px solid var(--n200);border-radius:var(--radius-lg);
   font-size:.85rem;color:var(--n900);background:var(--white);
   font-family:var(--font);width:100%;
   transition:border-color .15s,box-shadow .15s;
@@ -279,7 +280,7 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 ════════════════════════════════════ */
 .btn{
   display:inline-flex;align-items:center;gap:6px;
-  padding:9px 16px;border:none;border-radius:var(--radius);
+  padding:10px 18px;border:none;border-radius:var(--radius-lg);
   cursor:pointer;font-size:.8rem;font-weight:600;
   font-family:var(--font);white-space:nowrap;
   transition:filter .15s,transform .1s,box-shadow .15s;
@@ -287,7 +288,7 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 .btn:hover:not(:disabled){filter:brightness(1.06)}
 .btn:active:not(:disabled){transform:scale(.97)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-primary{background:var(--g700);color:#fff}
+.btn-primary{background:var(--g700);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
 .btn-success{background:var(--success);color:#fff}
 .btn-danger{background:var(--danger);color:#fff}
 .btn-ghost{background:var(--n100);color:var(--n700);border:1px solid var(--n200)}
@@ -320,7 +321,7 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
    CHECK-IN — PANTALLA PRINCIPAL
 ════════════════════════════════════ */
 .checkin-clock{
-  background:linear-gradient(135deg,var(--g900) 0%,var(--g700) 100%);
+  background:linear-gradient(135deg,#1E3A5F 0%,#2563EB 100%);
   border-radius:var(--radius-xl);padding:28px 20px 24px;
   text-align:center;color:#fff;margin-bottom:20px;
   box-shadow:var(--shadow-md);
@@ -379,20 +380,22 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 .mark-btn:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-2px);box-shadow:var(--shadow-md)}
 .mark-btn:active:not(:disabled){transform:scale(.97)}
 .mark-btn:disabled{opacity:.4;cursor:not-allowed;filter:none;transform:none}
-.mark-btn-in{background:linear-gradient(135deg,#166534,#15803D)}
-.mark-btn-out{background:linear-gradient(135deg,#7F1D1D,#DC2626)}
+.mark-btn-in{background:linear-gradient(135deg,#1D4ED8,#2563EB);box-shadow:0 4px 12px rgba(37,99,235,.35)}
+.mark-btn-out{background:linear-gradient(135deg,#991B1B,#EF4444);box-shadow:0 4px 12px rgba(239,68,68,.3)}
 .mark-btn-emoji{font-size:2rem}
 .mark-btn-label{font-size:.85rem;font-weight:700;color:#fff}
 .mark-btn-sub{font-size:.65rem;color:rgba(255,255,255,.65);font-weight:400}
 /* Registro facial — modal usuario */
 .face-reg-circle{
-  width:180px;height:180px;border-radius:50%;overflow:hidden;
-  background:#000;margin:8px auto;display:none;border:3px solid var(--n200);
-  transition:border-color .3s;
+  width:220px;height:220px;border-radius:50%;overflow:hidden;
+  background:#111;margin:10px auto;display:none;
+  border:4px solid var(--n200);box-shadow:0 4px 20px rgba(0,0,0,.2);
+  transition:border-color .3s,box-shadow .3s;
 }
-.face-reg-circle.wait{border-color:var(--warn);border-style:dashed}
-.face-reg-circle.ok{border-color:var(--g600)}
-.face-reg-circle.fail{border-color:var(--danger)}
+.face-reg-circle.wait{border-color:var(--warn);border-style:dashed;animation:pulseBorder 1s infinite}
+.face-reg-circle.ok{border-color:#2563EB;box-shadow:0 0 0 4px rgba(37,99,235,.2)}
+.face-reg-circle.fail{border-color:var(--danger);box-shadow:0 0 0 4px rgba(220,38,38,.2)}
+@keyframes pulseBorder{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,.3)}50%{box-shadow:0 0 0 8px rgba(217,119,6,.1)}}
 #regFaceVideo{width:100%;height:100%;object-fit:cover;display:block}
 .face-steps{display:none;margin-top:8px}
 .face-step{display:flex;align-items:center;gap:8px;padding:8px 10px;
@@ -407,13 +410,13 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 ════════════════════════════════════ */
 .tab-bar{display:flex;gap:2px;border-bottom:2px solid var(--n200);margin-bottom:20px;flex-wrap:wrap}
 .tab-btn{
-  padding:9px 15px;background:none;border:none;cursor:pointer;
+  padding:10px 16px;background:none;border:none;cursor:pointer;
   font-size:.78rem;font-weight:600;color:var(--n400);
-  border-bottom:2px solid transparent;margin-bottom:-2px;
+  border-bottom:3px solid transparent;margin-bottom:-2px;
   font-family:var(--font);transition:color .15s,border-color .15s;
 }
 .tab-btn:hover{color:var(--n700)}
-.tab-btn.active{color:var(--g700);border-bottom-color:var(--g700)}
+.tab-btn.active{color:var(--g700);border-bottom-color:var(--g700);background:var(--g50);border-radius:var(--radius) var(--radius) 0 0}
 .tab-panel{display:none}.tab-panel.active{display:block}
 
 /* ════════════════════════════════════
@@ -459,7 +462,7 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 }
 .modal-backdrop.open{display:flex}
 .modal{
-  background:var(--white);border-radius:var(--radius-xl);
+  background:var(--white);border-radius:28px;
   width:100%;max-width:500px;max-height:92vh;overflow-y:auto;
   box-shadow:var(--shadow-lg);
   animation:modalIn .22s cubic-bezier(.34,1.56,.64,1);
@@ -506,7 +509,7 @@ body{font-family:var(--font);background:var(--n50);color:var(--n900);line-height
 ════════════════════════════════════ */
 .login-wrap{
   min-height:100dvh;width:100%;display:flex;
-  background:linear-gradient(135deg,var(--g900) 0%,#166534 50%,#15803D 100%);
+  background:linear-gradient(135deg,#1E3A5F 0%,#1D4ED8 50%,#2563EB 100%);
 }
 .login-left{
   flex:1;display:flex;align-items:center;justify-content:center;
@@ -618,6 +621,113 @@ textarea,.detail-row .v,.detail-row .k,.payslip-name,
 .detail-summary .dl,.empty-state p{
   text-transform:none!important
 }
+
+/* ── Tablas: scroll horizontal, nunca reducir el texto ── */
+.table-wrap{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.dtable{
+  min-width:600px; /* ancho mínimo para que no colapsen */
+}
+/* Nómina general: más columnas, más ancho */
+#payrollAll .dtable{min-width:1000px}
+#users .dtable{min-width:800px}
+/* Indicador visual de que hay scroll */
+.table-wrap::after{
+  content:'← Desliza para ver más →';
+  display:none;
+  text-align:center;
+  font-size:.65rem;
+  color:var(--n400);
+  padding:6px;
+}
+@media(max-width:768px){
+  .table-wrap::after{display:block}
+  /* En móvil las celdas pueden ser un poco más compactas */
+  .dtable td,.dtable th{padding:10px 10px}
+}
+/* Evitar que el contenido se reduzca al hacer pinch */
+body{
+  touch-action:pan-x pan-y;
+}
+
+
+/* ── Banner de actualización disponible ── */
+.update-banner{
+  display:none;position:fixed;top:0;left:0;right:0;z-index:9999;
+  background:linear-gradient(135deg,#166534,#15803D);
+  color:#fff;padding:14px 20px;
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+  animation:slideDown .35s cubic-bezier(.34,1.56,.64,1);
+}
+.update-banner.show{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:none;opacity:1}}
+.update-banner .ub-icon{font-size:1.4rem;flex-shrink:0}
+.update-banner .ub-text{flex:1}
+.update-banner .ub-title{font-weight:700;font-size:.9rem}
+.update-banner .ub-sub{font-size:.75rem;opacity:.8;margin-top:1px;text-transform:none!important}
+.update-banner .ub-btn{
+  background:#fff;color:#166534;border:none;border-radius:8px;
+  padding:8px 18px;font-weight:700;font-size:.82rem;cursor:pointer;
+  font-family:var(--font);flex-shrink:0;
+  transition:background .15s;
+}
+.update-banner .ub-btn:hover{background:#F0FDF4}
+.update-banner .ub-close{
+  background:none;border:none;color:rgba(255,255,255,.6);
+  cursor:pointer;font-size:1.2rem;padding:0 4px;flex-shrink:0;
+}
+
+
+/* ── ANTI-ZOOM: solo scroll, sin pinch ── */
+html, body {
+  overflow-x: hidden;
+  touch-action: pan-x pan-y !important;
+}
+/* Las tablas no se encojen, solo scrollean */
+.table-wrap {
+  overflow-x: auto !important;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.dtable {
+  table-layout: fixed;
+  width: max-content !important;
+  min-width: 100%;
+}
+/* Nómina general: columnas fijas */
+#payrollAll .dtable { min-width: 1100px !important; width: max-content !important; }
+#users .dtable      { min-width: 900px  !important; width: max-content !important; }
+/* Hint de scroll en móvil */
+@media(max-width:768px){
+  .scroll-hint {
+    display: block !important;
+    text-align: center;
+    font-size: .65rem;
+    color: var(--n400);
+    padding: 4px 0 8px;
+  }
+}
+.scroll-hint { display: none; }
+
+
+/* ── Cámara frontal: sin espejo (imagen natural) ── */
+#faceVideo, #regFaceVideo {
+  transform: scaleX(-1);   /* des-espeja la cámara frontal */
+  -webkit-transform: scaleX(-1);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* El círculo de registro también */
+.face-reg-circle video {
+  transform: scaleX(-1);
+  -webkit-transform: scaleX(-1);
+}
+
 </style>
 </head>
 <body>
@@ -633,6 +743,17 @@ textarea,.detail-row .v,.detail-row .k,.payslip-name,
   </div>
   <button class="btn btn-primary btn-sm" id="installBtn" onclick="promptInstall()">Instalar</button>
   <button class="btn btn-ghost btn-sm" onclick="dismissInstall()">✕</button>
+</div>
+
+<!-- ══ BANNER ACTUALIZACIÓN ══ -->
+<div class="update-banner" id="updateBanner">
+  <span class="ub-icon">🔄</span>
+  <div class="ub-text">
+    <div class="ub-title">Nueva versión disponible</div>
+    <div class="ub-sub">Hay una actualización de DISAM lista para instalar</div>
+  </div>
+  <button class="ub-btn" onclick="applyUpdate()">Actualizar ahora</button>
+  <button class="ub-close" onclick="dismissUpdate()" title="Cerrar">✕</button>
 </div>
 
 <!-- ══════════ LOGIN ══════════ -->
@@ -860,7 +981,7 @@ textarea,.detail-row .v,.detail-row .k,.payslip-name,
           <div class="field"><label>Zona</label><select id="incZone"></select></div>
           <div class="field"><label>Fecha</label><input type="date" id="incDate"></div>
           <div class="field"><label>Monto total S/.</label><input type="number" id="incAmount" min="0" step="0.01" placeholder="0.00"></div>
-          <div class="field"><label>N° Planilla</label><input type="text" id="incPlanilla" placeholder="PL-00123"></div>
+          <div class="field"><label>N° Planilla</label><input type="number" id="incPlanilla" placeholder="123" min="0" step="1" style="text-transform:none!important"></div>
           <div class="field" style="grid-column:1/-1"><label>Descripción del producto</label><input type="text" id="incDesc" placeholder="Ej: 3 cajas de aceite, ruta norte"></div>
         </div>
         <button class="btn btn-primary" style="margin-top:14px" onclick="createIncident()">Registrar incidencia</button>
@@ -891,7 +1012,7 @@ textarea,.detail-row .v,.detail-row .k,.payslip-name,
           <div class="field"><label>Zona</label><select id="discZone"></select></div>
           <div class="field"><label>Monto S/.</label><input type="number" id="discAmount" min="0" step="0.01" placeholder="0.00"></div>
           <div class="field"><label>Fecha</label><input type="date" id="discDate"></div>
-          <div class="field" style="grid-column:1/-1"><label>N° Planilla</label><input type="text" id="discPlanilla" placeholder="PL-00123"></div>
+          <div class="field" style="grid-column:1/-1"><label>N° Planilla</label><input type="number" id="discPlanilla" placeholder="123" min="0" step="1" style="text-transform:none!important"></div>
         </div>
         <button class="btn btn-primary" style="margin-top:14px" onclick="createDiscount()">Registrar faltante</button>
       </div>
@@ -912,66 +1033,57 @@ textarea,.detail-row .v,.detail-row .k,.payslip-name,
         <div><div class="page-title">Trabajadores</div><div class="page-desc">Gestión de usuarios del sistema</div></div>
         <div class="btn-group">
           <button class="btn btn-primary" onclick="openUserModal()">➕ Nuevo</button>
-          <button class="btn btn-ghost" onclick="exportUsersExcel()">📊 Excel</button>
-          <button class="btn btn-ghost" onclick="document.getElementById('importUsersFile').click()">📥 Importar</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportUsersExcel()">📊 Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('importUsersFile').click()">📥 Importar</button>
           <input type="file" id="importUsersFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importUsersExcel(event)">
-          <button class="btn btn-ghost btn-sm" type="button" onclick="const h=document.getElementById('importHintBox');h.style.display=h.style.display==='none'?'block':'none'" title="Ver instrucciones de importación">❓ Cómo importar</button>
         </div>
       </div>
       <div id="usersAlert"></div>
+
+      <!-- Hint importar -->
       <div id="importHintBox" style="display:none;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:.75rem;color:#166534;line-height:1.8;text-transform:none!important">
-        <strong>📋 Cómo preparar el Excel para importar trabajadores:</strong><br>
-        La primera fila debe tener los encabezados exactamente así:<br>
-        <code style="background:#DCFCE7;padding:2px 6px;border-radius:4px;font-size:.72rem">USUARIO | CONTRASEÑA | NOMBRE COMPLETO | DNI | WHATSAPP</code><br><br>
-        <strong>Ejemplo:</strong><br>
-        <table style="border-collapse:collapse;width:100%;margin-top:4px;font-size:.7rem">
-          <tr style="background:#DCFCE7">
-            <td style="padding:4px 8px;border:1px solid #BBF7D0"><strong>USUARIO</strong></td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0"><strong>CONTRASEÑA</strong></td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0"><strong>NOMBRE COMPLETO</strong></td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0"><strong>DNI</strong></td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0"><strong>WHATSAPP</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0">JPEREZ</td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0">clave123</td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0">JUAN PÉREZ LÓPEZ</td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0">70123456</td>
-            <td style="padding:4px 8px;border:1px solid #BBF7D0">51987654321</td>
-          </tr>
-        </table>
-        <br>⚠️ Los nuevos trabajadores se crean con rol <strong>Auxiliar de Reparto</strong> y sueldo <strong>S/. 0</strong>. Edítalos luego para asignar rol, sueldo y rostro.
+        <strong>📋 Formato del Excel:</strong> Primera fila con encabezados:
+        <code style="background:#DCFCE7;padding:2px 6px;border-radius:4px;font-size:.72rem;display:block;margin:6px 0">USUARIO | CONTRASEÑA | NOMBRE COMPLETO | DNI | WHATSAPP</code>
+        ⚠️ Los nuevos trabajadores se crean con rol <strong>Auxiliar de Reparto</strong> y sueldo <strong>S/. 0</strong>.
+        <button onclick="document.getElementById('importHintBox').style.display='none'" style="float:right;background:none;border:none;cursor:pointer;font-size:1rem;color:#166534">✕</button>
       </div>
-      <div class="search-wrap" style="margin-bottom:14px">
-        <input id="searchUsers" placeholder="Buscar por nombre o usuario…" onkeyup="filterUsers()">
+
+      <!-- Buscador -->
+      <div style="position:relative;margin-bottom:16px">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.9rem;pointer-events:none">🔍</span>
+        <input id="searchUsers" placeholder="Buscar por nombre, usuario o rol…" onkeyup="filterUsers()"
+          style="width:100%;padding:10px 12px 10px 36px;border:1.5px solid var(--n200);border-radius:var(--radius);font-size:.85rem;font-family:var(--font)">
       </div>
-      <div class="table-wrap">
-        <table class="dtable">
-          <thead><tr><th>Usuario</th><th>Nombre</th><th>DNI</th><th>Rol</th><th>Ubicación</th><th>Sueldo base</th><th>AFP</th><th>WhatsApp</th><th>Rostro</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="usersTable"></tbody>
-        </table>
-      </div>
+
+      <!-- Contador -->
+      <div id="usersCount" style="font-size:.75rem;color:var(--n400);margin-bottom:12px"></div>
+
+      <!-- Tarjetas de trabajadores -->
+      <div id="usersCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px"></div>
     </div>
 
-    <!-- NÓMINA GENERAL -->
+    <!-- NÓMINA GENERAL — tarjetas -->
     <div id="payrollAll" class="page">
       <div class="page-header">
         <div><div class="page-title">Nómina general</div><div class="page-desc">Haberes de todos los trabajadores</div></div>
         <div class="btn-group">
-          <button class="btn btn-ghost btn-sm" onclick="exportAllPayslipsPDF()">📄 PDF general</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportAllPayslipsExcel()">📊 Excel general</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportAllPayslipsPDF()">📄 PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportAllPayslipsExcel()">📊 Excel</button>
         </div>
       </div>
       <div class="filters-row">
-        <div class="field" style="max-width:200px"><label>Mes</label><input type="month" id="payrollAllMonth" onchange="renderPayrollAll()"></div>
-        <div class="search-wrap"><label style="font-size:.75rem;font-weight:600;color:var(--n700);display:block;margin-bottom:5px">Buscar</label><input type="text" id="payrollAllSearch" placeholder="Nombre o rol…" oninput="renderPayrollAll()"></div>
+        <div class="field" style="max-width:200px">
+          <label>Mes</label>
+          <input type="month" id="payrollAllMonth" onchange="renderPayrollAll()">
+        </div>
+        <div style="flex:1;position:relative;min-width:180px">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.9rem;pointer-events:none">🔍</span>
+          <input type="text" id="payrollAllSearch" placeholder="Buscar nombre o rol…" oninput="renderPayrollAll()"
+            style="width:100%;padding:10px 12px 10px 36px;border:1.5px solid var(--n200);border-radius:var(--radius);font-size:.85rem;font-family:var(--font)">
+        </div>
       </div>
-      <div class="table-wrap">
-        <table class="dtable">
-          <thead><tr><th>Trabajador</th><th>Rol</th><th>Sueldo Base</th><th>H. Extra</th><th>Bono Asist.</th><th>Bono 0 Pérd.</th><th>Desc. Prod.</th><th>Desc. Tard.</th><th>Desc. Faltas</th><th>Desc. AFP</th><th>Desc. Liq.</th><th>Adelantos</th><th>Total</th><th></th></tr></thead>
-          <tbody id="payrollAllTable"></tbody>
-        </table>
-      </div>
+      <!-- Tarjetas de nómina -->
+      <div id="payrollAllCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px"></div>
     </div>
 
     <!-- CONFIGURACIÓN -->
@@ -1495,7 +1607,9 @@ function startRegFace(){
 }
 function stopRegFace(){
   if(regFaceStream){regFaceStream.getTracks().forEach(t=>t.stop());regFaceStream=null;}
-  const v=document.getElementById('regFaceVideo'); if(v){v.style.display='none';v.srcObject=null;}
+  const v=document.getElementById('regFaceVideo'); if(v){v.srcObject=null;}
+  const c=document.getElementById('regFaceCircle'); if(c){c.style.display='none';}
+  const w=document.getElementById('regFaceWrap'); if(w){w.style.display='none';}
 }
 function setRegRing(state){
   const ring=document.getElementById('regFaceRing');
@@ -1599,7 +1713,11 @@ function startFace(){
   setCheckinRing('wait');
   setCheckinInstruction('Iniciando cámara…','Coloca tu rostro dentro del círculo','');
   if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}}).then(stream=>{
+    const facingConstraint={facingMode:{exact:'user'}};
+    const fallbackConstraint={video:{facingMode:'user'}};
+    navigator.mediaDevices.getUserMedia({video:facingConstraint})
+      .catch(()=>navigator.mediaDevices.getUserMedia(fallbackConstraint))
+      .then(stream=>{
       faceStream=stream;video.srcObject=stream;
       video.onloadeddata=()=>{
         if(!faceAutoTried){
@@ -1793,11 +1911,12 @@ function calcPayroll(username,year,month){
   const overtimePay=valorPorMinutoExtra*overtimeNetMinutes;
 
   const lostProductsTotal=data.incidents.filter(i=>i.user===username&&i.date.startsWith(monthStr)).reduce((s,i)=>s+Number(i.amount),0);
-  const hasLossTracking=(user.role==='AUXILIAR_REPARTO'||user.role==='ADMINISTRADOR');
+  // Contabilidad NO tiene: bono asistencia, bono cero pérdidas, desc. productos, desc. liquidación
+  const isContabilidad=(user.role==='CONTABILIDAD');
+  const hasLossTracking=!isContabilidad&&(user.role==='AUXILIAR_REPARTO'||user.role==='ADMINISTRADOR');
   const isAuxiliarBonus=(user.role==='AUXILIAR_REPARTO');
 
-  // Contabilidad no recibe bono de asistencia perfecta
-  const bonoAsistenciaPerfecta=(user.role!=='CONTABILIDAD'&&faltas===0&&tardinessMinutes===0)?cfg.bonoAsistenciaPerfecta:0;
+  const bonoAsistenciaPerfecta=(!isContabilidad&&faltas===0&&tardinessMinutes===0)?cfg.bonoAsistenciaPerfecta:0;
   const bonoCeroPerdidas=(isAuxiliarBonus&&lostProductsTotal===0)?cfg.bonoCeroPerdidas:0;
 
   const descuentoTardanza=tardinessMinutes*cfg.tarifaTardanzaPorMinuto;
@@ -1805,7 +1924,7 @@ function calcPayroll(username,year,month){
   const descuentoAFP=(user.afpApplies===false)?0:cfg.afpAmount;
 
   // Faltante de liquidación: exclusivo de Conductor
-  const liquidacionDescuentoTotal=(user.role===LIQUIDACION_ROLE)
+  const liquidacionDescuentoTotal=(!isContabilidad&&user.role===LIQUIDACION_ROLE)
     ? data.otherDiscounts.filter(dd=>dd.user===username&&dd.date.startsWith(monthStr)).reduce((s,dd)=>s+Number(dd.amount),0)
     : 0;
   const advancesTotal=data.advances.filter(a=>a.user===username&&a.date.startsWith(monthStr)).reduce((s,a)=>s+Number(a.amount),0);
@@ -1865,7 +1984,7 @@ function payrollHtml(p){
   const clickRow=(label,val,type,cls='')=>`<tr><td style="color:var(--n600);padding:11px 16px">${label}</td><td style="text-align:right;padding:11px 16px"><span class="clickable-cell ${cls}" onclick="showPayrollDetail('${uname}',${yy},${mm},'${type}')" title="Toca para ver el detalle">${val} <span style="font-size:.65rem;opacity:.6">▸ ver</span></span></td></tr>`;
 
   // Cabecera tipo boleta
-  let html=`<div style="background:linear-gradient(135deg,var(--g900),var(--g700));color:#fff;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:24px">
+  let html=`<div style="background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:24px">
     <div style="font-size:.68rem;opacity:.6;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Boleta del mes</div>
     <div style="font-size:1.15rem;font-weight:700">${p.user.name}</div>
     <div style="font-size:.78rem;opacity:.65;margin-top:2px">${ROLES[p.user.role]}</div>
@@ -1893,23 +2012,22 @@ function payrollHtml(p){
   html+=srow('🎁','Bonos');
   if(p.user.role!=='CONTABILIDAD'){
     html+=row('Bono asistencia perfecta',`+${fmtMoney(p.bonoAsistenciaPerfecta)}`,p.bonoAsistenciaPerfecta>0?'pos':'');
-  }
-  if(p.isAuxiliarBonus){
-    html+=row('Bono cero pérdidas (productos)',`+${fmtMoney(p.bonoCeroPerdidas)}`,p.bonoCeroPerdidas>0?'pos':'');
-  }
-  if(p.user.role==='CONTABILIDAD'&&!p.isAuxiliarBonus){
-    html+=row('Sin bonos aplicables para este rol','—');
+    if(p.isAuxiliarBonus){
+      html+=row('Bono cero pérdidas (productos)',`+${fmtMoney(p.bonoCeroPerdidas)}`,p.bonoCeroPerdidas>0?'pos':'');
+    }
+  }else{
+    html+=row('Bonos','No aplica para este rol','');
   }
 
   // Descuentos
   html+=srow('➖','Descuentos');
-  if(p.hasLossTracking){
+  if(p.hasLossTracking&&p.user.role!=='CONTABILIDAD'){
     html+=clickRow('Productos perdidos',`−${fmtMoney(p.lostProductsTotal)}`,'products','neg');
   }
   html+=clickRow('Tardanzas',`−${fmtMoney(p.descuentoTardanza)}`,'tardanza','neg');
   html+=clickRow('Faltas injustificadas',`−${fmtMoney(p.descuentoFaltas)}`,'faltas','neg');
   html+=row(`AFP${p.descuentoAFP===0?' (no aplica)':''}`,`−${fmtMoney(p.descuentoAFP)}`,'neg');
-  if(p.user.role==='CONDUCTOR'){
+  if(p.user.role==='CONDUCTOR'&&p.user.role!=='CONTABILIDAD'){
     html+=clickRow('Faltante de liquidación',`−${fmtMoney(p.liquidacionDescuentoTotal)}`,'liquidacion','neg');
   }
   html+=clickRow('Adelantos de sueldo',`−${fmtMoney(p.advancesTotal)}`,'adelantos','neg');
@@ -1944,41 +2062,8 @@ function renderMyLosses(){
 }
 
 /* ---------- NÓMINA GENERAL ---------- */
-function renderPayrollAll(){
-  const val=document.getElementById('payrollAllMonth').value||new Date().toISOString().substring(0,7);
-  const [y,m]=val.split('-').map(Number);
-  const data=getData();
-  const search=((document.getElementById('payrollAllSearch')||{}).value||'').toLowerCase().trim();
-  let users=Object.values(data.users);
-  if(search) users=users.filter(u=>
-    (u.name||'').toLowerCase().includes(search) ||
-    (u.username||'').toLowerCase().includes(search) ||
-    (ROLES[u.role]||'').toLowerCase().includes(search) ||
-    (u.role||'').toLowerCase().includes(search)
-  );
-  const cell=(val,type,user)=>`<td><span class="clickable-cell" onclick="showPayrollDetail('${user}',${y},${m},'${type}')">${val}</span></td>`;
-  const rows=users.map(u=>{
-    const p=calcPayroll(u.username,y,m);
-    const un=u.username;
-    return `<tr>
-      <td>${p.user.name}</td>
-      <td><span class="chip chip-${p.user.role}">${ROLES[p.user.role]}</span></td>
-      <td class="money">${fmtMoney(p.baseSalary)}</td>
-      ${cell(fmtMoney(p.overtimePay),'overtime',un)}
-      <td class="money pos">${fmtMoney(p.bonoAsistenciaPerfecta)}</td>
-      <td class="money pos">${fmtMoney(p.bonoCeroPerdidas)}</td>
-      ${cell(fmtMoney(p.hasLossTracking?p.lostProductsTotal:0),'products',un)}
-      ${cell(fmtMoney(p.descuentoTardanza),'tardanza',un)}
-      ${cell(fmtMoney(p.descuentoFaltas),'faltas',un)}
-      <td class="money neg">${fmtMoney(p.descuentoAFP)}</td>
-      ${cell(fmtMoney(p.liquidacionDescuentoTotal),'liquidacion',un)}
-      ${cell(fmtMoney(p.advancesTotal),'adelantos',un)}
-      <td class="money"><strong>${fmtMoney(p.totalPagar)}</strong></td>
-      <td><button class="btn btn-ghost btn-sm" onclick="exportPayslipPDF('${un}',${y},${m})">📄 PDF</button></td>
-    </tr>`;
-  }).join('');
-  document.getElementById('payrollAllTable').innerHTML=rows||'<tr><td colspan="14" class="empty-state"><div class="empty-icon">📊</div>Sin resultados</td></tr>';
-}
+/* ══ NÓMINA GENERAL — función vacía reemplazada arriba ══ */
+function _renderPayrollAll_legacy(){}
 
 /* ---------- ADELANTOS (solo Gerente asigna) ---------- */
 function populateUserFilter(selectId,roleFilter,excludeGerente){
@@ -2211,29 +2296,162 @@ function deleteDiscount(id){
 }
 
 /* ---------- USUARIOS (solo Gerente) ---------- */
+/* ══ TRABAJADORES — TARJETAS ══ */
 function renderUsers(){
   const data=getData();
-  const rows=Object.values(data.users).map(u=>{
+  const search=(document.getElementById('searchUsers').value||'').toLowerCase();
+  let users=Object.values(data.users);
+  if(search) users=users.filter(u=>
+    (u.name||'').toLowerCase().includes(search)||
+    (u.username||'').toLowerCase().includes(search)||
+    (ROLES[u.role]||'').toLowerCase().includes(search)
+  );
+  const count=document.getElementById('usersCount');
+  if(count) count.textContent=`${users.length} trabajador${users.length!==1?'es':''} encontrado${users.length!==1?'s':''}`;
+  if(!users.length){
+    document.getElementById('usersCards').innerHTML=
+      '<div style="text-align:center;padding:40px;color:var(--n400)"><div style="font-size:2.5rem;margin-bottom:10px">👥</div>Sin trabajadores</div>';
+    return;
+  }
+  document.getElementById('usersCards').innerHTML=users.map(u=>{
+    const hasFace=!!u.faceDescriptor;
+    const roleColors={'GERENTE':'#EDE9FE;color:#5B21B6','ADMINISTRADOR':'#DBEAFE;color:#1E40AF',
+      'CONTABILIDAD':'#CCFBF1;color:#134E4A','AUXILIAR_REPARTO':'#FFEDD5;color:#9A3412',
+      'TIENDA':'#DCFCE7;color:#14532D','CONDUCTOR':'#CFFAFE;color:#164E63'};
+    const rc=roleColors[u.role]||'#F1F5F9;color:#475569';
     const sched=getEffectiveSchedule(u);
-    const custom=u.customWorkStart?' (personalizado)':'';
-    const faceBadge=u.faceDescriptor?'<span class="chip chip-active">Registrado</span>':'<span class="chip chip-inactive">Sin registrar</span>';
-    return `<tr><td>${u.username}</td><td>${u.name}</td><td>${u.dni||'—'}</td><td><span class="chip chip-${u.role}">${ROLES[u.role]}</span></td>
-    <td>${locationName(u.assignedLocationId)}</td>
-    <td>${timeStrFromMinutes(sched.workStartMinutes)}${custom}</td>
-    <td>${fmtMoney(u.baseSalary)}</td>
-    <td>${u.afpApplies===false?'No':'Sí'}</td>
-    <td>${u.whatsapp?`<a href='https://wa.me/${u.whatsapp}' target='_blank' style='color:var(--success);font-weight:600;text-decoration:none;'>📱 ${u.whatsapp}</a>`:'—'}</td>
-    <td>${faceBadge}</td>
-    <td><span class="badge ${u.active?'chip-ok':'chip-red'}">${u.active?'Activo':'Inactivo'}</span></td>
-    <td><button class="btn btn-ghost btn-sm" onclick="editUser('${u.username}')">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${u.username}')">Eliminar</button></td></tr>`;
+    return `<div style="background:#fff;border:1px solid var(--n200);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+      <!-- Cabecera de tarjeta -->
+      <div style="background:linear-gradient(135deg,#1D4ED8,#2563EB);padding:16px;display:flex;align-items:center;gap:12px;border-radius:var(--radius-xl) var(--radius-xl) 0 0">
+        <div style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,.3)">
+          ${u.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
+        </div>
+        <div style="flex:1;overflow:hidden">
+          <div style="font-weight:700;font-size:.88rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.65);margin-top:1px">@${u.username}</div>
+        </div>
+        <span style="background:${rc.split(';')[0]};color:${rc.split(';color:')[1]};padding:3px 9px;border-radius:99px;font-size:.65rem;font-weight:700;flex-shrink:0">${ROLES[u.role]||u.role}</span>
+      </div>
+      <!-- Datos -->
+      <div style="padding:14px 16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div style="background:var(--n50);border-radius:8px;padding:8px 10px">
+            <div style="font-size:.6rem;color:var(--n400);text-transform:uppercase;letter-spacing:.05em;font-weight:700">Sueldo base</div>
+            <div style="font-size:.95rem;font-weight:800;color:var(--g800);margin-top:2px">${fmtMoney(u.baseSalary)}</div>
+          </div>
+          <div style="background:var(--n50);border-radius:8px;padding:8px 10px">
+            <div style="font-size:.6rem;color:var(--n400);text-transform:uppercase;letter-spacing:.05em;font-weight:700">DNI</div>
+            <div style="font-size:.88rem;font-weight:600;color:var(--n800);margin-top:2px">${u.dni||'—'}</div>
+          </div>
+          <div style="background:var(--n50);border-radius:8px;padding:8px 10px">
+            <div style="font-size:.6rem;color:var(--n400);text-transform:uppercase;letter-spacing:.05em;font-weight:700">Horario</div>
+            <div style="font-size:.78rem;font-weight:600;color:var(--n800);margin-top:2px">${timeStrFromMinutes(sched.workStartMinutes)} – ${timeStrFromMinutes(sched.exitMinutes)}</div>
+          </div>
+          <div style="background:var(--n50);border-radius:8px;padding:8px 10px">
+            <div style="font-size:.6rem;color:var(--n400);text-transform:uppercase;letter-spacing:.05em;font-weight:700">WhatsApp</div>
+            <div style="font-size:.78rem;font-weight:600;margin-top:2px">${u.whatsapp?`<a href="https://wa.me/${u.whatsapp}" target="_blank" style="color:var(--success);text-decoration:none">📱 ${u.whatsapp}</a>`:'—'}</div>
+          </div>
+        </div>
+        <!-- Tags de estado -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <span style="padding:3px 8px;border-radius:99px;font-size:.65rem;font-weight:700;background:${u.active?'#DCFCE7':'#FEE2E2'};color:${u.active?'#14532D':'#7F1D1D'}">${u.active?'✓ Activo':'✗ Inactivo'}</span>
+          <span style="padding:3px 8px;border-radius:99px;font-size:.65rem;font-weight:700;background:${hasFace?'#DCFCE7':'#FEF9C3'};color:${hasFace?'#14532D':'#713F12'}">${hasFace?'🙂 Rostro OK':'⚠️ Sin rostro'}</span>
+          <span style="padding:3px 8px;border-radius:99px;font-size:.65rem;font-weight:700;background:#F1F5F9;color:#475569">${u.afpApplies===false?'Sin AFP':'AFP'}</span>
+          <span style="padding:3px 8px;border-radius:99px;font-size:.65rem;font-weight:700;background:#F1F5F9;color:#475569">📍 ${locationName(u.assignedLocationId)}</span>
+        </div>
+        <!-- Botones -->
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="editUser('${u.username}')">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="confirmDeleteUser('${u.username}')" title="Eliminar">🗑️</button>
+        </div>
+      </div>
+    </div>`;
   }).join('');
-  document.getElementById('usersTable').innerHTML=rows||'<tr><td colspan="11" class="empty-state"><div class="empty-icon">👥</div>Sin trabajadores registrados</td></tr>';
 }
 function filterUsers(){
-  const s=document.getElementById('searchUsers').value.toLowerCase();
-  document.querySelectorAll('#usersTable tr').forEach(r=>{ r.style.display=r.textContent.toLowerCase().includes(s)?'':'none'; });
+  renderUsers();
 }
+
+/* ══ NÓMINA GENERAL — TARJETAS ══ */
+function renderPayrollAll(){
+  const val=document.getElementById('payrollAllMonth').value||new Date().toISOString().substring(0,7);
+  const [y,m]=val.split('-').map(Number);
+  const data=getData();
+  const search=((document.getElementById('payrollAllSearch')||{}).value||'').toLowerCase().trim();
+  let users=Object.values(data.users);
+  if(search) users=users.filter(u=>
+    (u.name||'').toLowerCase().includes(search)||
+    (ROLES[u.role]||'').toLowerCase().includes(search)||
+    (u.role||'').toLowerCase().includes(search)
+  );
+  if(!users.length){
+    document.getElementById('payrollAllCards').innerHTML=
+      '<div style="text-align:center;padding:40px;color:var(--n400)"><div style="font-size:2.5rem;margin-bottom:10px">📊</div>Sin resultados</div>';
+    return;
+  }
+  const isContab=r=>r==='CONTABILIDAD';
+  document.getElementById('payrollAllCards').innerHTML=users.map(u=>{
+    const p=calcPayroll(u.username,y,m);
+    const un=u.username;
+    const click=(val,type)=>`<span class="clickable-cell" style="cursor:pointer;color:var(--info);font-weight:700;text-decoration:underline dotted" onclick="showPayrollDetail('${un}',${y},${m},'${type}')">${val}</span>`;
+    const neg=(v)=>`<span style="color:var(--danger);font-weight:700">${v}</span>`;
+    const pos=(v)=>`<span style="color:var(--success);font-weight:700">${v}</span>`;
+    const totalColor=p.totalPagar>=0?'var(--g800)':'var(--danger)';
+    return `<div style="background:#fff;border:1px solid var(--n200);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+      <!-- Cabecera -->
+      <div style="background:linear-gradient(135deg,#1D4ED8,#2563EB);padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:.9rem;color:#fff">${u.name}</div>
+            <div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-top:1px">${ROLES[u.role]}</div>
+          </div>
+          <button onclick="exportPayslipPDF('${un}',${y},${m})" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.7rem;font-weight:600;font-family:var(--font)">📄 PDF</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div style="font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.05em">Sueldo base</div>
+          <div style="font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.05em">Total a pagar</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:2px">
+          <div style="font-size:1rem;font-weight:700;color:#fff">${fmtMoney(p.baseSalary)}</div>
+          <div style="font-size:1.3rem;font-weight:800;color:#fff">${fmtMoney(p.totalPagar)}</div>
+        </div>
+      </div>
+      <!-- Desglose -->
+      <div style="padding:12px 14px">
+        <!-- Bonos -->
+        ${p.overtimePay>0||p.bonoAsistenciaPerfecta>0||p.bonoCeroPerdidas>0?`
+        <div style="margin-bottom:10px">
+          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n400);margin-bottom:6px">+ Bonos</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${p.overtimePay>0?`<div style="background:#F0FDF4;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">H. Extra</span> ${click(pos(fmtMoney(p.overtimePay)),'overtime')}</div>`:''}
+            ${!isContab(u.role)&&p.bonoAsistenciaPerfecta>0?`<div style="background:#F0FDF4;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">Asistencia</span> ${pos(fmtMoney(p.bonoAsistenciaPerfecta))}</div>`:''}
+            ${p.bonoCeroPerdidas>0?`<div style="background:#F0FDF4;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">0 Pérdidas</span> ${pos(fmtMoney(p.bonoCeroPerdidas))}</div>`:''}
+          </div>
+        </div>`:''}
+        <!-- Descuentos -->
+        ${p.totalDescuentos>0?`
+        <div style="margin-bottom:10px">
+          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n400);margin-bottom:6px">− Descuentos</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${p.hasLossTracking&&p.lostProductsTotal>0&&!isContab(u.role)?`<div style="background:#FEF2F2;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">Productos</span> ${click(neg(fmtMoney(p.lostProductsTotal)),'products')}</div>`:''}
+            ${p.descuentoTardanza>0?`<div style="background:#FEF2F2;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">Tardanzas</span> ${click(neg(fmtMoney(p.descuentoTardanza)),'tardanza')}</div>`:''}
+            ${p.descuentoFaltas>0?`<div style="background:#FEF2F2;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">Faltas</span> ${click(neg(fmtMoney(p.descuentoFaltas)),'faltas')}</div>`:''}
+            ${p.descuentoAFP>0?`<div style="background:#FEF2F2;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">AFP</span> ${neg(fmtMoney(p.descuentoAFP))}</div>`:''}
+            ${p.liquidacionDescuentoTotal>0&&!isContab(u.role)?`<div style="background:#FEF2F2;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">Liquidación</span> ${click(neg(fmtMoney(p.liquidacionDescuentoTotal)),'liquidacion')}</div>`:''}
+            ${p.advancesTotal>0?`<div style="background:#FEF2F2;border-radius:8px;padding:6px 10px;font-size:.75rem"><span style="color:var(--n500)">Adelantos</span> ${click(neg(fmtMoney(p.advancesTotal)),'adelantos')}</div>`:''}
+          </div>
+        </div>`:''}
+        <!-- Asistencia -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span style="background:var(--n50);border-radius:6px;padding:4px 9px;font-size:.7rem;color:var(--n600)">📅 ${p.daysAttended}/${p.businessDays} días</span>
+          ${p.faltas>0?`<span style="background:#FEF2F2;border-radius:6px;padding:4px 9px;font-size:.7rem;color:var(--danger)">❌ ${p.faltas} falta${p.faltas>1?'s':''}</span>`:'<span style="background:#F0FDF4;border-radius:6px;padding:4px 9px;font-size:.7rem;color:var(--success)">✓ Sin faltas</span>'}
+          ${p.tardinessMinutes>0?`<span style="background:#FFFBEB;border-radius:6px;padding:4px 9px;font-size:.7rem;color:var(--warn)">⏰ ${fmtMinutes(p.tardinessMinutes)} tarde</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function updateScheduleHint(){
   const role=document.getElementById('fRole').value;
   const hintEl=document.getElementById('scheduleHint');
@@ -2267,7 +2485,10 @@ function openUserModal(){
   document.getElementById('userModalAlert').innerHTML='';
   document.getElementById('faceRequiredMark').style.display='inline';
   document.getElementById('regFaceStatus').innerHTML='';
+  const _fc=document.getElementById('regFaceCircle');
+  if(_fc){_fc.style.display='none';_fc.classList.remove('ok','fail','wait');}
   stopRegFace();
+  pendingFaceDescriptor=null;
   document.getElementById('userModal').classList.add('open');
 }
 function editUser(username){
@@ -3164,12 +3385,57 @@ function dismissInstall(){
 }
 
 // Registrar service worker
-if('serviceWorker' in navigator){
+let _swWaitingWorker=null;
+
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js')
-      .then(reg=>console.log('SW registrado:',reg.scope))
-      .catch(err=>console.log('SW no disponible (normal en archivo local):',err));
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      console.log('SW registrado:',reg.scope);
+
+      // Detectar nueva versión y ACTUALIZAR AUTOMÁTICAMENTE
+      reg.addEventListener('updatefound',()=>{
+        const newWorker=reg.installing;
+        if(!newWorker)return;
+        newWorker.addEventListener('statechange',()=>{
+          if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+            // Nueva versión lista → activar automáticamente sin preguntar
+            newWorker.postMessage({type:'SKIP_WAITING'});
+          }
+        });
+      });
+
+      // Si ya hay una versión esperando al cargar, activar de inmediato
+      if(reg.waiting&&navigator.serviceWorker.controller){
+        reg.waiting.postMessage({type:'SKIP_WAITING'});
+      }
+
+      // Recargar la página cuando el nuevo SW tome control
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        window.location.reload();
+      });
+
+      // Verificar actualizaciones cada 60 segundos (detecta cambios en Vercel rápido)
+      setInterval(()=>reg.update(), 60*1000);
+
+      // También verificar al volver a la app (cuando el usuario abre el celular)
+      document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='visible') reg.update();
+      });
+    }).catch(err=>{
+      console.log('SW no disponible:',err);
+    });
   });
+}
+
+// Funciones para el banner manual (por si se necesitan)
+function showUpdateBanner(){
+  const b=document.getElementById('updateBanner');
+  if(b) b.classList.add('show');
+}
+function applyUpdate(){ window.location.reload(true); }
+function dismissUpdate(){
+  const b=document.getElementById('updateBanner');
+  if(b) b.classList.remove('show');
 }
 
 // Mostrar banner según plataforma
@@ -3252,24 +3518,47 @@ function importBackup(event){
 const SUPABASE_HARDCODED_URL = 'https://yrfajwneyayjwdxgeocb.supabase.co';
 const SUPABASE_HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyZmFqd25leWF5andkeGdlb2NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTc2MTMsImV4cCI6MjA5OTc5MzYxM30.X6smYeZ17YNWN6p7rbAZkn1F1Lx5V3YORiIsp5j-t9o';
 
-let _supabase=null, _realtimeChannel=null;
+let _realtimeChannel=null, _realtimeWs=null;
 
-function getSupabaseClient(){
+
+
+async function sbRead(){
+  const {url,key}=getSupabaseCredentials();
+  if(!url||!key)return null;
+  try{
+    const res=await fetch(`${url}/rest/v1/app_data?id=eq.disam_data&select=data,updated_at`,{
+      headers:{'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json'}
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const rows=await res.json();
+    return rows&&rows.length>0?rows[0]:null;
+  }catch(e){console.warn('sbRead:',e.message);return null;}
+}
+async function sbWrite(data){
+  const {url,key}=getSupabaseCredentials();
+  if(!url||!key)return false;
+  try{
+    const res=await fetch(`${url}/rest/v1/app_data`,{
+      method:'POST',
+      headers:{'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({id:'disam_data',data:data,updated_at:new Date().toISOString()})
+    });
+    return res.ok||res.status===201||res.status===204;
+  }catch(e){console.warn('sbWrite:',e.message);return false;}
+}
+
+function getSupabaseCredentials(){
   const data=getData();
-  // Prioridad: 1) config guardada, 2) constantes hardcoded
   const url=(data.config&&data.config.supabaseUrl)||SUPABASE_HARDCODED_URL;
   const key=(data.config&&data.config.supabaseKey)||SUPABASE_HARDCODED_KEY;
+  return {url:url?url.replace(/\/$/,''):'',key:key||''};
+}
+
+function getSupabaseClient(){
+  const {url,key}=getSupabaseCredentials();
   if(!url||!key)return null;
-  if(!window.supabase)return null;
-  // Re-crear cliente si cambió la URL
-  if(!_supabase||_supabase.supabaseUrl!==url){
-    _supabase=window.supabase.createClient(url,key,{
-      realtime:{params:{eventsPerSecond:10}},
-      db:{schema:'public'}
-    });
-    _supabase.supabaseUrl=url; // guardar para comparar
-  }
-  return _supabase;
+  // Retornar objeto compatible con código legacy
+  return {_ok:true};
 }
 
 function setSyncStatus(state,label){
@@ -3318,68 +3607,58 @@ function setSyncStatus(state,label){
 }
 
 async function supabasePushSilent(dataOverride){
-  const sb=getSupabaseClient(); if(!sb)return;
+  const {url,key}=getSupabaseCredentials();
+  if(!url||!key)return;
   const data=dataOverride||getData();
   setSyncStatus('sync','Sincronizando…');
-  try{
-    const payload={id:'disam_data',data:data,updated_at:new Date().toISOString()};
-    const {error}=await sb.from('app_data').upsert(payload,{onConflict:'id'});
-    if(error)throw error;
-    setSyncStatus('ok','✅ Sincronizado');
-  }catch(e){
-    console.error('Supabase push error:',e);
-    setSyncStatus('err','Sin conexión');
-  }
+  const ok=await sbWrite(data);
+  if(ok){setSyncStatus('ok','✅ Sincronizado');}
+  else{setSyncStatus('err','Sin conexión');}
 }
 
 async function supabasePull(){
-  const sb=getSupabaseClient();
-  if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura Supabase primero.</div>';return;}
-  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Descargando datos desde Supabase…</div>';
-  try{
-    const {data:rows,error}=await sb.from('app_data').select('data').eq('id','disam_data').single();
-    if(error)throw error;
-    const remote=rows.data;
-    if(!remote||!remote.users)throw new Error('Datos no válidos en la nube');
-    const local=getData();
-    remote.config.supabaseUrl=local.config.supabaseUrl;
-    remote.config.supabaseKey=local.config.supabaseKey;
-    if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
-    if(local.config.waToken) remote.config.waToken=local.config.waToken;
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
-    document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos descargados. Recargando…</div>';
-    setTimeout(()=>location.reload(),1200);
-  }catch(e){
-    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
+  const {url,key}=getSupabaseCredentials();
+  const statusEl=document.getElementById('cloudStatus');
+  if(!url||!key){if(statusEl)statusEl.innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura Supabase primero.</div>';return;}
+  if(statusEl)statusEl.innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Descargando datos…</div>';
+  const row=await sbRead();
+  if(!row||!row.data||!row.data.users){
+    if(statusEl)statusEl.innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>No hay datos en la nube aún. Haz clic en "Crear tabla" desde el dispositivo principal.</div>';
+    return;
   }
+  applyRemoteData(row.data);
+  if(statusEl)statusEl.innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos descargados. Recargando…</div>';
+  setTimeout(()=>location.reload(),1200);
 }
 
 async function supabasePush(){
-  const sb=getSupabaseClient();
-  if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura Supabase primero.</div>';return;}
-  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Subiendo datos…</div>';
-  try{
-    const data=getData();
-    const {error}=await sb.from('app_data').upsert({id:'disam_data',data:data,updated_at:new Date().toISOString()},{onConflict:'id'});
-    if(error)throw error;
-    document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos subidos a Supabase correctamente.</div>';
+  const {url,key}=getSupabaseCredentials();
+  const statusEl=document.getElementById('cloudStatus');
+  if(!url||!key){if(statusEl)statusEl.innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura Supabase primero.</div>';return;}
+  if(statusEl)statusEl.innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Subiendo datos…</div>';
+  const data=getData();
+  const ok=await sbWrite(data);
+  if(ok){
+    if(statusEl)statusEl.innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>Datos subidos correctamente.</div>';
     setSyncStatus('ok','✅ Sincronizado');
-  }catch(e){
-    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
+  }else{
+    if(statusEl)statusEl.innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>Error al subir. Verifica la conexión.</div>';
   }
 }
 
 async function supabaseCreateTable(){
-  const sb=getSupabaseClient();
-  if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Configura y guarda la URL y Key de Supabase primero.</div>';return;}
-  document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Configurando tabla en Supabase…</div>';
+  const {url,key}=getSupabaseCredentials();
+  const statusEl=document.getElementById('cloudStatus');
+  if(!url||!key){if(statusEl)statusEl.innerHTML='<div class="alert alert-warning"><span class="alert-icon">⚠️</span>Guarda la URL y Key primero.</div>';return;}
+  if(statusEl)statusEl.innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Verificando tabla en Supabase…</div>';
   try{
-    // Intentar insertar un registro de prueba
-    const {error}=await sb.from('app_data').upsert(
-      {id:'disam_ping',data:{},updated_at:new Date().toISOString()},
-      {onConflict:'id'}
-    );
-    if(error&&(error.code==='42P01'||error.message.includes('does not exist'))){
+    // Probar si la tabla existe con un ping
+    const pingRes=await fetch(`${url}/rest/v1/app_data?id=eq.disam_ping&select=id`,{
+      headers:{'apikey':key,'Authorization':'Bearer '+key}
+    });
+    const error=!pingRes.ok;
+    const errorMsg=error?await pingRes.text():'';
+    if(error&&(pingRes.status===404||errorMsg.includes('does not exist')||errorMsg.includes('42P01'))){
       // Tabla no existe — mostrar SQL completo con Realtime
       document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-warning">
         <span class="alert-icon">⚠️</span>La tabla no existe. Ve a Supabase → <strong>SQL Editor</strong> → "New query" → pega y ejecuta esto:
@@ -3398,33 +3677,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE app_data;
         Luego vuelve y haz clic en este botón de nuevo.
       </div>`;
     }else if(error){
-      throw error;
+      if(statusEl)statusEl.innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error HTTP ${pingRes.status}. Verifica las credenciales.</div>`;
     }else{
-      // Tabla existe — limpiar ping, habilitar realtime y subir datos reales
-      await sb.from('app_data').delete().eq('id','disam_ping');
-      // Ejecutar SQL para habilitar realtime (usando rpc si está disponible)
-      try{
-        await sb.rpc('exec_sql',{sql:'ALTER PUBLICATION supabase_realtime ADD TABLE app_data;'});
-      }catch(_){
-        // Si no existe rpc, el usuario lo ejecutó manualmente — continuar
-      }
+      // Tabla existe — subir datos reales
       const data=getData();
       data.lastSaved=new Date().toISOString();
-      const {error:e2}=await sb.from('app_data').upsert(
-        {id:'disam_data',data:data,updated_at:data.lastSaved},
-        {onConflict:'id'}
-      );
-      if(e2)throw e2;
+      const ok=await sbWrite(data);
       localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
-      document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-success">
-        <span class="alert-icon">✅</span><strong>¡Todo listo!</strong> Datos subidos a Supabase. La sincronización automática está activa.<br>
-        <span style="font-size:.75rem">Ahora ve al celular → Configuración → Empresa → pega la misma URL y Key → "Guardar y conectar". Los datos aparecerán solos.</span>
-      </div>`;
-      setSyncStatus('ok','✅ Conectado');
-      startRealtime();
+      if(ok){
+        if(statusEl)statusEl.innerHTML=`<div class="alert alert-success"><span class="alert-icon">✅</span><strong>¡Todo listo!</strong> Datos subidos. Sincronización activa en todos los dispositivos.</div>`;
+        setSyncStatus('ok','✅ Conectado');
+        startPolling();
+      }else{
+        if(statusEl)statusEl.innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>Error al subir datos. Verifica la conexión.</div>';
+      }
     }
   }catch(e){
-    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
+    if(statusEl)statusEl.innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
   }
 }
 
@@ -3443,15 +3712,21 @@ async function saveSupabaseConfig(){
   document.getElementById('cloudStatus').innerHTML='<div class="alert alert-info"><span class="alert-icon">⏳</span>Probando conexión…</div>';
   const sb=getSupabaseClient();
   if(!sb){document.getElementById('cloudStatus').innerHTML='<div class="alert alert-error"><span class="alert-icon">❌</span>No se pudo inicializar Supabase. Verifica la URL.</div>';return;}
-  // Test de conexión
+  // Test de conexión con REST
   try{
-    const {error}=await sb.from('app_data').select('id').limit(1);
-    if(error&&error.code!=='42P01') throw error;
-    document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>¡Conectado a Supabase! Ahora haz clic en "🛠 Crear tabla automáticamente".</div>';
-    setSyncStatus('ok','✅ Conectado');
-    startRealtime();
+    const testRes=await fetch(`${url}/rest/v1/app_data?limit=1`,{
+      headers:{'apikey':key,'Authorization':'Bearer '+key}
+    });
+    if(testRes.ok||testRes.status===406){
+      // 406 = tabla no existe todavía, pero la conexión funciona
+      document.getElementById('cloudStatus').innerHTML='<div class="alert alert-success"><span class="alert-icon">✅</span>¡Conectado! Ahora haz clic en "🛠 Crear tabla".</div>';
+      setSyncStatus('ok','✅ Conectado');
+      startPolling();
+    }else{
+      throw new Error('HTTP '+testRes.status+' — Verifica tu URL y Key');
+    }
   }catch(e){
-    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error de conexión: ${e.message}. Verifica tu URL y Key.</div>`;
+    document.getElementById('cloudStatus').innerHTML=`<div class="alert alert-error"><span class="alert-icon">❌</span>Error: ${e.message}</div>`;
   }
 }
 
@@ -3516,31 +3791,32 @@ function startRealtime(){
     });
 }
 
-/* ── Polling de respaldo: consulta Supabase cada 10s por si falla el realtime ── */
+/* ── Polling REST: consulta Supabase cada 8s ── */
 let _pollInterval=null;
 let _lastRemoteUpdatedAt='';
 function startPolling(){
   if(_pollInterval) clearInterval(_pollInterval);
+  const btn=document.getElementById('realtimeBtn');
+  if(btn) btn.textContent='🔄 Sync: ON';
   _pollInterval=setInterval(async()=>{
-    const sb=getSupabaseClient(); if(!sb)return;
+    const {url,key}=getSupabaseCredentials();
+    if(!url||!key)return;
     try{
-      const {data:rows,error}=await sb
-        .from('app_data').select('data,updated_at').eq('id','disam_data').single();
-      if(error||!rows)return;
-      if(rows.updated_at===_lastRemoteUpdatedAt)return; // sin cambios
-      _lastRemoteUpdatedAt=rows.updated_at;
-      // Comparar con el último guardado local
+      const row=await sbRead();
+      if(!row)return;
+      if(row.updated_at===_lastRemoteUpdatedAt)return;
+      _lastRemoteUpdatedAt=row.updated_at;
       const local=getData();
-      const remoteTime=new Date(rows.updated_at).getTime();
+      const remoteTime=new Date(row.updated_at).getTime();
       const localTime=new Date(local.lastSaved||0).getTime();
-      if(remoteTime>localTime+2000){ // remoto es más nuevo (con 2s de margen)
-        if(applyRemoteData(rows.data)){
+      if(remoteTime>localTime+2000){
+        if(applyRemoteData(row.data)){
           setSyncStatus('ok','🔄 Actualizado');
           refreshCurrentScreen();
         }
       }
     }catch(_){}
-  }, 10000); // cada 10 segundos
+  }, 8000);
 }
 
 function stopPolling(){
@@ -3548,68 +3824,47 @@ function stopPolling(){
 }
 
 function toggleRealtime(){
-  const sb=getSupabaseClient();
-  if(!sb){showAlertOn('configAlert','Configura Supabase primero','error');return;}
-  if(_realtimeChannel){
-    try{sb.removeChannel(_realtimeChannel);}catch(_){}
-    _realtimeChannel=null;
+  const {url,key}=getSupabaseCredentials();
+  if(!url||!key){showAlertOn('configAlert','Configura Supabase primero','error');return;}
+  if(_pollInterval){
     stopPolling();
     const btn=document.getElementById('realtimeBtn');
-    if(btn) btn.textContent='📡 Tiempo real: OFF';
-    setSyncStatus('ok','Desconectado');
+    if(btn) btn.textContent='🔄 Sync: OFF';
+    setSyncStatus('ok','Pausado');
   }else{
-    startRealtime();
+    startPolling();
   }
 }
 
-/* ── Al arrancar: esperar SDK y descargar datos frescos ── */
+/* ── Al arrancar: descargar datos frescos con REST directo ── */
 async function cloudPullOnLoad(){
-  // Esperar hasta 8 segundos a que el SDK de Supabase cargue desde CDN
-  let waited=0;
-  while(!window.supabase&&waited<8000){
-    await new Promise(r=>setTimeout(r,300));
-    waited+=300;
-  }
-  const sb=getSupabaseClient();
-  if(!sb){
-    // No hay credenciales configuradas — no mostrar error, solo ocultar badge
+  const {url,key}=getSupabaseCredentials();
+  if(!url||!key){
     const el=document.getElementById('syncIndicator');
     if(el) el.classList.remove('show');
     return;
   }
   try{
     setSyncStatus('sync','Conectando…');
-    const {data:rows,error}=await sb
-      .from('app_data').select('data,updated_at').eq('id','disam_data').single();
-    if(error){
-      if(error.code==='PGRST116'||error.message.includes('No rows')){
-        // Tabla vacía — subir datos locales
-        const local=getData();
-        if(Object.keys(local.users||{}).length>0){
-          local.lastSaved=new Date().toISOString();
-          await sb.from('app_data').upsert(
-            {id:'disam_data',data:local,updated_at:local.lastSaved},
-            {onConflict:'id'}
-          );
-          setSyncStatus('ok','✅ Datos subidos');
-        }else{
-          setSyncStatus('ok','✅ Conectado');
-        }
-      }else{
-        setSyncStatus('err','Error BD');
-        // Reintentar en 15s
-        setTimeout(cloudPullOnLoad,15000);
-        return;
-      }
-    }else if(rows&&rows.data&&rows.data.users){
-      _lastRemoteUpdatedAt=rows.updated_at;
+    const row=await sbRead();
+    if(!row){
+      // Sin datos en la nube — subir los datos locales
       const local=getData();
-      const remoteTime=new Date(rows.updated_at).getTime();
+      if(Object.keys(local.users||{}).length>0){
+        local.lastSaved=new Date().toISOString();
+        const ok=await sbWrite(local);
+        setSyncStatus(ok?'ok':'err',ok?'✅ Conectado':'Sin conexión');
+      }else{
+        setSyncStatus('ok','✅ Conectado');
+      }
+    }else{
+      _lastRemoteUpdatedAt=row.updated_at;
+      const local=getData();
+      const remoteTime=new Date(row.updated_at).getTime();
       const localTime=new Date(local.lastSaved||0).getTime();
       if(remoteTime>localTime+1000){
-        if(applyRemoteData(rows.data)){
+        if(applyRemoteData(row.data)){
           setSyncStatus('ok','✅ Sincronizado');
-          // Refrescar login UI si hay datos nuevos
           const loginStatus=document.getElementById('loginSyncStatus');
           if(loginStatus){
             loginStatus.style.display='block';
@@ -3620,24 +3875,18 @@ async function cloudPullOnLoad(){
           refreshCurrentScreen();
         }
       }else if(localTime>remoteTime+1000){
-        // Local más nuevo — subir
         local.lastSaved=new Date().toISOString();
-        await sb.from('app_data').upsert(
-          {id:'disam_data',data:local,updated_at:local.lastSaved},
-          {onConflict:'id'}
-        );
+        await sbWrite(local);
         setSyncStatus('ok','✅ Al día');
       }else{
         setSyncStatus('ok','✅ Al día');
       }
-    }else{
-      setSyncStatus('ok','✅ Conectado');
     }
-    startRealtime();
+    // Iniciar polling cada 8 segundos (reemplaza el realtime del SDK)
+    startPolling();
   }catch(e){
     setSyncStatus('err','Sin conexión');
-    console.warn('Supabase pull on load:',e.message);
-    // Reintentar en 15s
+    console.warn('cloudPullOnLoad error:',e.message);
     setTimeout(cloudPullOnLoad,15000);
   }
 }
@@ -3722,16 +3971,15 @@ function importUsersExcel(event){
   event.target.value='';
 }
 
-/* ─── KEEPALIVE: mantener Supabase Realtime activo permanentemente ─── */
+/* ─── KEEPALIVE: asegurar polling siempre activo ─── */
 setInterval(()=>{
-  const sb=getSupabaseClient();
-  if(!sb)return;
-  // Si no hay canal activo (se desconectó), reconectar automáticamente
-  if(!_realtimeChannel){
-    console.log('Reconectando Realtime…');
-    startRealtime();
+  const {url,key}=getSupabaseCredentials();
+  if(!url||!key)return;
+  if(!_pollInterval){
+    console.log('Reactivando polling…');
+    startPolling();
   }
-},30000); // verificar cada 30 segundos
+},30000);
 
 /* ---------- INIT ---------- */
 document.addEventListener('DOMContentLoaded',()=>{
@@ -3765,6 +4013,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   },{passive:true});
 })();
 /* ─── UPPERCASE INPUT ENFORCEMENT ─── */
+const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp','cfgSupabaseUrl','cfgSupabaseKey','cfgWaPhoneId','cfgWaToken','cfgMsgProducto','cfgMsgFaltante','cfgMsgAdelanto','cfgMsgTardanza','cfgMsgFalta','cfgCloudKey','cfgCloudBin'];
 const SKIP_UPPER_IDS=new Set(SKIP_UPPERCASE);
 document.addEventListener('input',function(e){
   const t=e.target;
@@ -3781,6 +4030,55 @@ document.addEventListener('input',function(e){
   }
 });
 
+
+/* ── Bloqueo TOTAL de pinch-to-zoom ── */
+// 1) Safari / iOS: bloquear gestures nativos
+document.addEventListener('gesturestart',  e=>e.preventDefault(), {passive:false,capture:true});
+document.addEventListener('gesturechange', e=>e.preventDefault(), {passive:false,capture:true});
+document.addEventListener('gestureend',    e=>e.preventDefault(), {passive:false,capture:true});
+
+// 2) Android Chrome: bloquear touchmove con 2+ dedos
+document.addEventListener('touchmove', function(e){
+  if(e.touches && e.touches.length > 1){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, {passive:false, capture:true});
+
+// 3) Bloquear doble-tap zoom (iOS/Android)
+let _lastTap = 0;
+document.addEventListener('touchend', function(e){
+  const now = Date.now();
+  const delta = now - _lastTap;
+  if(delta < 300 && delta > 0){
+    e.preventDefault();
+  }
+  _lastTap = now;
+}, {passive:false, capture:true});
+
+// 4) Forzar scale=1 si el browser hizo zoom igual
+window.addEventListener('resize', function(){
+  if(window.visualViewport){
+    const vv = window.visualViewport;
+    if(vv.scale > 1){
+      // El usuario hizo zoom — forzar reset visual
+      document.body.style.zoom = (1/vv.scale);
+      setTimeout(()=>{ document.body.style.zoom = ''; }, 300);
+    }
+  }
+}, {passive:true});
+
+// 5) visualViewport API: interceptar cambios de escala
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', function(){
+    if(window.visualViewport.scale > 1.05){
+      // Intentar reset — funciona en algunos browsers
+      document.querySelector('meta[name=viewport]')
+        .setAttribute('content',
+          'width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=0');
+    }
+  }, {passive:true});
+}
 
 </script>
 </body>
