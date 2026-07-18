@@ -4,12 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#166534">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DISAM">
+<meta name="application-name" content="DISAM">
+<meta name="msapplication-TileColor" content="#166534">
+<meta name="msapplication-TileImage" content="icon-144.png">
+<meta name="description" content="Sistema de control de asistencias y nomina DISAM. Calidad que te abastece.">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>DISAM — Asistencias</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<title>DISAM — Control de Asistencias</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -3044,45 +3053,115 @@ function checkAndNotifyMissedDays(){
 
 /* ─── PWA: instalación y service worker ─── */
 let deferredInstallPrompt=null;
+
+// Detectar plataforma
+const _isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const _isAndroid=/android/i.test(navigator.userAgent);
+const _isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+
+// Android/Chrome: capturar el prompt de instalación nativo
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
   deferredInstallPrompt=e;
-  if(!localStorage.getItem('installDismissed')){
-    document.getElementById('installBanner').classList.add('show');
+  if(!_isStandalone&&!localStorage.getItem('installDismissed')){
+    setTimeout(()=>showInstallBanner('android'),1500);
   }
 });
+
+// Detectar si ya está instalada
+window.addEventListener('appinstalled',()=>{
+  const b=document.getElementById('installBanner');
+  if(b) b.classList.remove('show');
+  deferredInstallPrompt=null;
+});
+
+function showInstallBanner(platform){
+  const banner=document.getElementById('installBanner');
+  const hint=document.getElementById('installHint');
+  const btn=document.getElementById('installBtn');
+  if(!banner)return;
+  if(platform==='ios'){
+    if(hint) hint.textContent='Toca Compartir ↑ → Añadir a pantalla de inicio';
+    if(btn){ btn.textContent='Cómo hacerlo'; btn.onclick=showIOSGuide; }
+  }else{
+    if(hint) hint.textContent='Añade la app a tu pantalla de inicio';
+    if(btn){ btn.textContent='Instalar'; btn.onclick=promptInstall; }
+  }
+  banner.classList.add('show');
+}
+
 function promptInstall(){
   if(deferredInstallPrompt){
     deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.then(()=>{
+    deferredInstallPrompt.userChoice.then(r=>{
+      if(r.outcome==='accepted'){
+        document.getElementById('installBanner').classList.remove('show');
+      }
       deferredInstallPrompt=null;
-      document.getElementById('installBanner').classList.remove('show');
     });
   }else{
-    // iOS: no hay prompt automático — mostrar instrucciones
-    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-    document.getElementById('installHint').innerHTML=isIOS
-      ? 'En iPhone: toca el botón <strong>Compartir</strong> (cuadrado con flecha) y luego <strong>"Añadir a pantalla de inicio"</strong>.'
-      : 'En Chrome: toca el menú <strong>⋮</strong> y luego <strong>"Añadir a pantalla principal"</strong>.';
+    showIOSGuide();
   }
 }
+
+function showIOSGuide(){
+  const guide=document.createElement('div');
+  guide.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:16px';
+  guide.innerHTML=`<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <img src="${document.querySelector('.sb-logo img')?.src||''}" style="width:64px;height:64px;border-radius:14px;margin:0 auto 12px;display:block;object-fit:cover">
+    <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:6px;color:#166534">Instalar DISAM</h3>
+    <p style="font-size:.85rem;color:#6B7280;margin-bottom:20px;line-height:1.6">Para instalar la app en tu ${_isIOS?'iPhone/iPad':'celular'}, sigue estos pasos:</p>
+    <div style="text-align:left;background:#F9FAFB;border-radius:12px;padding:16px;margin-bottom:20px">
+      ${_isIOS?`
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:.82rem">
+        <span style="background:#166534;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:.72rem">1</span>
+        <span>Toca el botón <strong>Compartir</strong> <span style="background:#E5E7EB;padding:2px 6px;border-radius:4px">⎙</span> en la barra inferior del navegador</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:.82rem">
+        <span style="background:#166534;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:.72rem">2</span>
+        <span>Desliza hacia abajo y toca <strong>"Añadir a pantalla de inicio"</strong></span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;font-size:.82rem">
+        <span style="background:#166534;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:.72rem">3</span>
+        <span>Toca <strong>"Añadir"</strong> en la esquina superior derecha</span>
+      </div>`:`
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:.82rem">
+        <span style="background:#166534;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:.72rem">1</span>
+        <span>Toca el menú <strong>⋮</strong> en la esquina superior derecha de Chrome</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;font-size:.82rem">
+        <span style="background:#166534;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:.72rem">2</span>
+        <span>Toca <strong>"Añadir a pantalla de inicio"</strong> o <strong>"Instalar app"</strong></span>
+      </div>`}
+    </div>
+    <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;background:#166534;color:#fff;border:none;border-radius:10px;padding:12px;font-size:.88rem;font-weight:700;cursor:pointer">Entendido ✓</button>
+  </div>`;
+  document.body.appendChild(guide);
+  guide.addEventListener('click',e=>{ if(e.target===guide) guide.remove(); });
+}
+
 function dismissInstall(){
   document.getElementById('installBanner').classList.remove('show');
   localStorage.setItem('installDismissed','1');
 }
-// Registrar service worker (solo funciona sobre HTTPS/Vercel)
+
+// Registrar service worker
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{/* archivo local: se ignora */});
+    navigator.serviceWorker.register('sw.js')
+      .then(reg=>console.log('SW registrado:',reg.scope))
+      .catch(err=>console.log('SW no disponible (normal en archivo local):',err));
   });
 }
-// Mostrar banner en iOS también (no dispara beforeinstallprompt)
+
+// Mostrar banner según plataforma
 window.addEventListener('load',()=>{
-  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
-  if(isIOS&&!isStandalone&&!localStorage.getItem('installDismissed')){
-    setTimeout(()=>document.getElementById('installBanner').classList.add('show'),2000);
+  if(_isStandalone)return; // ya está instalada
+  if(localStorage.getItem('installDismissed'))return;
+  if(_isIOS){
+    setTimeout(()=>showInstallBanner('ios'),2500);
   }
+  // Android: el banner se muestra automáticamente cuando se captura beforeinstallprompt
 });
 
 
