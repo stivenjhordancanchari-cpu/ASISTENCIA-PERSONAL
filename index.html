@@ -65,9 +65,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--n900);line-height:
   width:var(--sb);flex-shrink:0;
   background:linear-gradient(180deg,#0F2E6E 0%,#1A56DB 100%);
   display:flex;flex-direction:column;
-  position:fixed;inset:0 auto 0 0;z-index:50;
+  position:fixed;top:0;left:0;bottom:0;width:var(--sb);z-index:50;
   overflow-y:auto;overflow-x:hidden;
   transition:transform .28s cubic-bezier(.4,0,.2,1);
+  height:100dvh;
 }
 .sb-head{padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
 .sb-brand{display:flex;align-items:center;gap:10px}
@@ -79,7 +80,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--n900);line-height:
 .sb-avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,.25)}
 .sb-uname{font-size:.8rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px}
 .sb-urole{font-size:.65rem;color:rgba(255,255,255,.45);margin-top:1px}
-.sb-nav{flex:1;padding:8px 8px;overflow-y:auto}
+.sb-nav{flex:1;padding:8px 8px;overflow-y:auto;overflow-x:hidden;min-height:0}
 .sb-section{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);padding:12px 8px 4px;display:block}
 .sb-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--r8);cursor:pointer;font-size:.8rem;font-weight:500;color:rgba(255,255,255,.6);margin-bottom:1px;transition:background .15s,color .15s;position:relative}
 .sb-item:hover{background:rgba(255,255,255,.08);color:#fff}
@@ -337,7 +338,7 @@ html,body{overflow-x:hidden}
 /* ── RESPONSIVE SIDEBAR ── */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
+  .sidebar.open{transform:translateX(0);overflow-y:auto;height:100dvh}
   .main-wrap{margin-left:0}
   .topbar-menu{display:block}
   .page{padding:14px}
@@ -516,37 +517,66 @@ html{touch-action:pan-x pan-y}
     <!-- MARCAR ASISTENCIA -->
     <div id="checkin" class="page">
       <div id="checkinAlert"></div>
-      <div class="checkin-clock">
+
+      <!-- Reloj -->
+      <div class="checkin-clock" style="margin-bottom:16px">
         <div class="clock-time" id="clock">00:00:00</div>
         <div class="clock-date" id="clockDate"></div>
         <div class="clock-loc" id="clockLocationBanner">📍 –</div>
       </div>
-      <div class="status-pills">
-        <div class="spill spill-wait" id="geoStatusPill">📍 Verificando GPS…</div>
-        <div class="spill spill-wait" id="faceStatusPill">🙂 Verificando rostro…</div>
-      </div>
-      <div class="face-circle-container" id="checkinFaceWrap">
-        <div class="face-ring-outer" id="checkinFaceRing">
-          <div class="face-video-wrap">
-            <video id="faceVideo" autoplay muted playsinline></video>
+
+      <!-- PASO 1: Verificando (GPS + Cámara) -->
+      <div id="checkinStep1">
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap">
+          <div class="spill spill-wait" id="geoStatusPill">📍 Verificando GPS…</div>
+          <div class="spill spill-wait" id="faceStatusPill">🙂 Verificando rostro…</div>
+        </div>
+        <!-- Círculo facial: solo visible mientras verifica -->
+        <div id="checkinFaceWrap" style="display:none;text-align:center;margin-bottom:16px">
+          <div style="width:220px;height:220px;border-radius:50%;overflow:hidden;margin:0 auto;border:4px solid var(--blue);box-shadow:0 0 0 6px rgba(26,86,219,.12)">
+            <video id="faceVideo" style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)" autoplay muted playsinline></video>
+          </div>
+          <div style="margin-top:10px;font-size:.82rem;font-weight:600;color:var(--n700)" id="faceMsgText">
+            Mira de frente a la cámara
+            <div style="font-size:.7rem;color:var(--n500);font-weight:400;margin-top:2px" id="faceMsgSub">Analizando tu rostro…</div>
           </div>
         </div>
-        <div class="face-msg" id="faceMsgText">Coloca tu rostro dentro del círculo<div class="sub" id="faceMsgSub">Mira de frente a la cámara</div></div>
+        <!-- Ring oculto (para compatibilidad con JS) -->
+        <div id="checkinFaceRing" style="display:none"></div>
+        <div id="geoResult" style="display:none"></div>
+        <div id="faceResult" style="display:none"></div>
       </div>
-      <div id="geoResult" style="display:none"></div>
-      <div id="faceResult" style="display:none"></div>
-      <div class="mark-grid">
-        <button class="mark-btn mark-btn-in" onclick="checkIn()">
-          <span class="mark-btn-emoji">☀️</span>
-          <span class="mark-btn-label">Marcar entrada</span>
-          <span class="mark-btn-sub">Inicio de jornada</span>
-        </button>
-        <button class="mark-btn mark-btn-out" onclick="checkOut()">
-          <span class="mark-btn-emoji">🌙</span>
-          <span class="mark-btn-label">Marcar salida</span>
-          <span class="mark-btn-sub">Fin de jornada</span>
-        </button>
+
+      <!-- PASO 2: Confirmación — aparece después de verificar -->
+      <div id="checkinStep2" style="display:none">
+        <!-- Avatar del trabajador verificado -->
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#0F2E6E,#1A56DB);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:#fff;box-shadow:0 4px 14px rgba(26,86,219,.35)" id="checkinAvatar">?</div>
+          <div style="font-weight:700;font-size:1rem;color:var(--n900)" id="checkinUserName"></div>
+          <div style="font-size:.75rem;color:var(--n500);margin-top:2px" id="checkinStatus">✅ Identidad verificada</div>
+        </div>
+        <!-- Botones de confirmación grandes -->
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:360px;margin:0 auto 20px">
+          <button id="btnConfirmIn" onclick="checkIn()"
+            style="width:100%;padding:20px;border:none;border-radius:var(--r20);background:linear-gradient(135deg,#1A56DB,#2563EB);color:#fff;font-family:var(--font);font-size:1rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 6px 18px rgba(26,86,219,.35);transition:transform .12s,filter .12s">
+            <span style="font-size:2rem">☀️</span>
+            <div style="text-align:left">
+              <div>CONFIRMAR ENTRADA</div>
+              <div style="font-size:.7rem;font-weight:400;opacity:.8">Inicio de jornada</div>
+            </div>
+          </button>
+          <button id="btnConfirmOut" onclick="checkOut()"
+            style="width:100%;padding:20px;border:none;border-radius:var(--r20);background:linear-gradient(135deg,#B91C1C,#EF4444);color:#fff;font-family:var(--font);font-size:1rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 6px 18px rgba(239,68,68,.3);transition:transform .12s,filter .12s">
+            <span style="font-size:2rem">🌙</span>
+            <div style="text-align:left">
+              <div>CONFIRMAR SALIDA</div>
+              <div style="font-size:.7rem;font-weight:400;opacity:.8">Fin de jornada</div>
+            </div>
+          </button>
+        </div>
       </div>
+
+      <!-- Registros del día -->
       <div class="card">
         <div class="card-title">📋 Registros de hoy</div>
         <div class="table-wrap">
@@ -1369,7 +1399,7 @@ function setCheckinInstruction(text,sub,type){
 function startFace(){
   const video=document.getElementById('faceVideo');
   const wrap=document.getElementById('checkinFaceWrap');
-  if(wrap){ wrap.style.display='block'; wrap.classList.add('show'); }
+  if(wrap) wrap.style.display='block';
   faceAutoTried=false;
   setCheckinRing('wait');
   setCheckinInstruction('Iniciando cámara…','Coloca tu rostro dentro del círculo','');
@@ -1399,7 +1429,7 @@ function startFace(){
 function stopFace(){
   if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}
   const v=document.getElementById('faceVideo'); if(v){v.srcObject=null;v.onloadeddata=null;}
-  const wrap=document.getElementById('checkinFaceWrap'); if(wrap){ wrap.style.display='none'; wrap.classList.remove('show'); }
+  const wrap=document.getElementById('checkinFaceWrap'); if(wrap) wrap.style.display='none';
   faceConfirmed=false;faceAutoTried=false;
 }
 async function verifyFaceReal(){
@@ -1423,6 +1453,8 @@ async function verifyFaceReal(){
     faceConfirmed=true;updateStatusPills();
     setCheckinRing('ok');
     setCheckinInstruction('✅ Rostro verificado','Ya puedes marcar tu asistencia','ok');
+    // Mostrar paso 2 automáticamente si GPS también OK
+    if(lastGeoOk) showCheckinConfirm();
   }else{
     faceConfirmed=false;updateStatusPills();
     setCheckinRing('fail');
@@ -1448,6 +1480,8 @@ function renderCheckin(){
   faceConfirmed=false;lastGeoOk=false;lastGeoLocationName='';
   document.getElementById('geoResult').innerHTML='';
   document.getElementById('faceResult').innerHTML='';
+  // Resetear pasos
+  hideCheckinConfirm();
   const locName=locationName(currentUser.assignedLocationId);
   const clb=document.getElementById('clockLocationBanner'); if(clb) clb.innerHTML=currentUser.assignedLocationId ? `📍 <strong>${locName}</strong>` : '⚠️ Sin ubicación asignada';
   updateTodayRecords();
@@ -1475,6 +1509,7 @@ function verifyLocation(){
     });
     if(best&&best.dist<=best.loc.radius){
       lastGeoOk=true;lastGeoLocationName=best.loc.name;updateStatusPills();
+      if(faceConfirmed) showCheckinConfirm();
       resultBox.innerHTML=`<div class="verify-status vs-ok">✅ Ubicación confirmada: <strong>${best.loc.name}</strong> (a ${Math.round(best.dist)} m, precisión GPS ±${Math.round(pos.coords.accuracy)} m)</div>`;
     }else{
       lastGeoOk=false;lastGeoLocationName='';updateStatusPills();
@@ -1512,7 +1547,8 @@ function registerAttendance(type){
   saveData(data);
   // Nota: notificación de tardanza deshabilitada por solicitud del usuario
   showAlertOn('checkinAlert',`✅ ${type==='in'?'Entrada':'Salida'} registrada correctamente en "${lastGeoLocationName}"`,'success');
-  stopFace();lastGeoOk=false;lastGeoLocationName='';
+  stopFace();lastGeoOk=false;lastGeoLocationName='';faceConfirmed=false;
+  hideCheckinConfirm();
   document.getElementById('geoResult').innerHTML='';document.getElementById('faceResult').innerHTML='';
   updateTodayRecords();
   setTimeout(()=>{ verifyLocation(); startFace(); },1200);
@@ -3683,6 +3719,31 @@ function importUsersExcel(event){
   };
   reader.readAsArrayBuffer(file);
   event.target.value='';
+}
+
+
+/* ─── Mostrar pantalla de confirmación de asistencia ─── */
+function showCheckinConfirm(){
+  const step1=document.getElementById('checkinStep1');
+  const step2=document.getElementById('checkinStep2');
+  if(step1) step1.style.display='none';
+  if(step2) step2.style.display='block';
+  // Poner iniciales del usuario
+  const av=document.getElementById('checkinAvatar');
+  const nm=document.getElementById('checkinUserName');
+  if(currentUser&&av){
+    av.textContent=currentUser.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  }
+  if(currentUser&&nm) nm.textContent=currentUser.name;
+  // Ocultar cámara para ahorrar batería
+  stopFace();
+}
+
+function hideCheckinConfirm(){
+  const step1=document.getElementById('checkinStep1');
+  const step2=document.getElementById('checkinStep2');
+  if(step1) step1.style.display='block';
+  if(step2) step2.style.display='none';
 }
 
 /* ─── KEEPALIVE: asegurar polling siempre activo ─── */
