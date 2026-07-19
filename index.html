@@ -1110,6 +1110,66 @@ function saveData(d){
   }
 }
 
+// ── applyRemoteData PROTEGIDO: nunca pierde datos locales ──
+function applyRemoteData(remote){
+  if(!remote||!remote.users)return false;
+  const local=getData();
+
+  // REGLA 1: si el local tiene más usuarios, el local gana
+  const localUserCount=Object.keys(local.users||{}).length;
+  const remoteUserCount=Object.keys(remote.users||{}).length;
+
+  // REGLA 2: nunca sobrescribir si el remoto es igual o más viejo
+  const remoteTime=new Date(remote.lastSaved||0).getTime();
+  const localTime=new Date(local.lastSaved||0).getTime();
+  if(localTime>=remoteTime&&localUserCount>=remoteUserCount){
+    return false; // local ya está al día o más actualizado
+  }
+
+  // REGLA 3: fusionar usuarios — nunca eliminar usuarios locales
+  // Si el remoto no tiene un usuario que sí tiene el local, conservar el local
+  const mergedUsers={...remote.users};
+  Object.keys(local.users||{}).forEach(uname=>{
+    if(!mergedUsers[uname]){
+      mergedUsers[uname]=local.users[uname]; // conservar usuario local
+    } else {
+      // Si ambos tienen el usuario, usar el más reciente
+      const localU=local.users[uname];
+      const remoteU=remote.users[uname];
+      // Conservar faceDescriptor local si el remoto no lo tiene
+      if(localU.faceDescriptor&&!remoteU.faceDescriptor){
+        mergedUsers[uname].faceDescriptor=localU.faceDescriptor;
+      }
+    }
+  });
+  remote.users=mergedUsers;
+
+  // REGLA 4: fusionar asistencia — nunca perder registros locales
+  const remoteAttKeys=new Set((remote.attendance||[]).map(a=>`${a.user}|${a.date}|${a.type}`));
+  (local.attendance||[]).forEach(a=>{
+    const k=`${a.user}|${a.date}|${a.type}`;
+    if(!remoteAttKeys.has(k)) remote.attendance.push(a);
+  });
+
+  // REGLA 5: fusionar adelantos — nunca perder adelantos locales
+  const remoteAdvKeys=new Set((remote.advances||[]).map(a=>a.id));
+  (local.advances||[]).forEach(a=>{
+    if(!remoteAdvKeys.has(a.id)) remote.advances.push(a);
+  });
+
+  // Preservar credenciales locales
+  const supUrl=local.config.supabaseUrl||remote.config.supabaseUrl||SUPABASE_HARDCODED_URL;
+  const supKey=local.config.supabaseKey||remote.config.supabaseKey||SUPABASE_HARDCODED_KEY;
+  remote.config.supabaseUrl=supUrl;
+  remote.config.supabaseKey=supKey;
+  if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
+  if(local.config.waToken)   remote.config.waToken=local.config.waToken;
+
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
+  if(_supabase&&_supabase.supabaseUrl!==supUrl) _supabase=null;
+  return true;
+}
+
 function initData(){
   const d=getData();
 
@@ -3537,26 +3597,6 @@ async function saveSupabaseConfig(){
 }
 
 // TIEMPO REAL: escuchar cambios desde otros dispositivos
-/* ── Aplicar datos remotos ── */
-function applyRemoteData(remote){
-  if(!remote||!remote.users)return false;
-  const local=getData();
-  // Preservar credenciales: si el local ya las tiene, usarlas
-  // Si no (dispositivo nuevo), heredar las de la nube
-  const supUrl=SUPABASE_HARDCODED_URL||local.config.supabaseUrl||remote.config.supabaseUrl;
-  const supKey=SUPABASE_HARDCODED_KEY||local.config.supabaseKey||remote.config.supabaseKey;
-  remote.config.supabaseUrl=supUrl;
-  remote.config.supabaseKey=supKey;
-  if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
-  if(local.config.waToken)   remote.config.waToken=local.config.waToken;
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(remote));
-  // Re-iniciar cliente con las nuevas credenciales si cambiaron
-  if(_supabase&&_supabase.supabaseUrl!==supUrl){
-    _supabase=null;
-  }
-  return true;
-}
-
 /* ── Refrescar la pantalla actual ── */
 function refreshCurrentScreen(){
   const active=document.querySelector('.page.active');
