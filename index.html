@@ -1113,19 +1113,19 @@ function saveData(d){
 function initData(){
   const d=getData();
 
-  // ── AUTO-CONFIGURAR SUPABASE: si hay credenciales hardcoded y el config no las tiene,
-  //    guardarlas automáticamente. Así cualquier dispositivo se conecta sin configurar nada.
+  // ── AUTO-CONFIGURAR SUPABASE: siempre garantizar que las credenciales
+  //    hardcoded estén en el config. Overwrite si no hay nada guardado.
   let configChanged=false;
-  if(SUPABASE_HARDCODED_URL&&!d.config.supabaseUrl){
-    d.config.supabaseUrl=SUPABASE_HARDCODED_URL;
-    configChanged=true;
+  if(SUPABASE_HARDCODED_URL&&(!d.config.supabaseUrl||d.config.supabaseUrl.trim()==='')){
+    d.config.supabaseUrl=SUPABASE_HARDCODED_URL; configChanged=true;
   }
-  if(SUPABASE_HARDCODED_KEY&&!d.config.supabaseKey){
-    d.config.supabaseKey=SUPABASE_HARDCODED_KEY;
-    configChanged=true;
+  if(SUPABASE_HARDCODED_KEY&&(!d.config.supabaseKey||d.config.supabaseKey.trim()==='')){
+    d.config.supabaseKey=SUPABASE_HARDCODED_KEY; configChanged=true;
   }
+  // Siempre guardar para que getSupabaseCredentials() las encuentre
   if(configChanged){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(d));
+    console.log('✅ Credenciales Supabase autoconfiguradas');
   }
 
   if(Object.keys(d.users).length===0){
@@ -1171,8 +1171,8 @@ function login(){
     setupMenuByRole();
     showScreen('dashboard');
     setTimeout(checkAndNotifyMissedDays, 1500);
-    // Mantener tiempo real activo siempre
-    if(!_realtimeChannel) startRealtime();
+    // Activar polling si no está activo
+    if(!_pollInterval) startPolling();
   }else{
     alert('Usuario, contraseña incorrectos o cuenta inactiva');
   }
@@ -1514,6 +1514,7 @@ function renderCheckin(){
   document.getElementById('geoResult').innerHTML='';
   document.getElementById('faceResult').innerHTML='';
   // Resetear pasos
+  window._faceVerifiedForConfirm=false;
   hideCheckinConfirm();
   const locName=locationName(currentUser.assignedLocationId);
   const clb=document.getElementById('clockLocationBanner'); if(clb) clb.innerHTML=currentUser.assignedLocationId ? `📍 <strong>${locName}</strong>` : '⚠️ Sin ubicación asignada';
@@ -1523,17 +1524,30 @@ function renderCheckin(){
 }
 function verifyLocation(){
   const data=getData();
-  const locations=data.config.locations||[];
+  const locations=(data.config.locations||[]).filter(l=>l.lat&&l.lng);
   const resultBox=document.getElementById('geoResult');
+  const gp=document.getElementById('geoStatusPill');
+
+  // Sin ubicaciones configuradas → GPS no requerido, marcar libremente
   if(locations.length===0){
-    resultBox.innerHTML='<div class="verify-status vs-fail">⚠️ Aún no hay ubicaciones configuradas. El Gerente debe agregarlas en Configuración → Ubicaciones.</div>';
+    lastGeoOk=true;lastGeoLocationName='Sin ubicación';
+    if(gp){gp.className='spill spill-ok';gp.textContent='📍 Sin restricción GPS';}
+    updateStatusPills();
+    if(faceConfirmed) showCheckinConfirm();
     return;
   }
+
   if(!navigator.geolocation){
-    resultBox.innerHTML='<div class="verify-status vs-fail">Este navegador no soporta geolocalización.</div>';
+    // GPS no disponible → permitir de todas formas con aviso
+    lastGeoOk=true;lastGeoLocationName='GPS no disponible';
+    if(gp){gp.className='spill spill-ok';gp.textContent='📍 GPS no disponible';}
+    updateStatusPills();
+    if(faceConfirmed) showCheckinConfirm();
     return;
   }
-  resultBox.innerHTML='<div class="geo-status geo-wait">⏳ Obteniendo ubicación…</div>';
+
+  if(gp){gp.className='spill spill-wait';gp.textContent='📍 Verificando GPS…';}
+
   navigator.geolocation.getCurrentPosition(pos=>{
     let best=null;
     locations.forEach(loc=>{
@@ -1541,31 +1555,40 @@ function verifyLocation(){
       if(!best||dist<best.dist) best={loc,dist};
     });
     if(best&&best.dist<=best.loc.radius){
-      lastGeoOk=true;lastGeoLocationName=best.loc.name;updateStatusPills();
+      lastGeoOk=true;lastGeoLocationName=best.loc.name;
+      if(gp){gp.className='spill spill-ok';gp.textContent='📍 '+best.loc.name;}
+      updateStatusPills();
       if(faceConfirmed) showCheckinConfirm();
-      resultBox.innerHTML=`<div class="verify-status vs-ok">✅ Ubicación confirmada: <strong>${best.loc.name}</strong> (a ${Math.round(best.dist)} m, precisión GPS ±${Math.round(pos.coords.accuracy)} m)</div>`;
     }else{
-      lastGeoOk=false;lastGeoLocationName='';updateStatusPills();
-      const msg=best?`Ubicación más cercana: "${best.loc.name}" a ${Math.round(best.dist)}m (máx ${best.loc.radius}m permitido)`:'No hay ubicaciones cercanas.';
-      resultBox.innerHTML=`<div class="verify-status vs-fail">❌ Fuera de rango. ${msg}</div>`;
+      // Fuera de rango → avisar pero NO bloquear
+      lastGeoOk=true;
+      lastGeoLocationName=best?best.loc.name:'Ubicación externa';
+      const dist=best?Math.round(best.dist):0;
+      if(gp){gp.className='spill spill-ok';gp.textContent='📍 '+(best?best.loc.name:'Externo');}
+      showAlertOn('checkinAlert',`📍 Estás a ${dist}m de "${best?best.loc.name:'la ubicación'}" (rango: ${best?best.loc.radius:0}m). Puedes marcar asistencia de todas formas.`,'warning');
+      updateStatusPills();
+      if(faceConfirmed) showCheckinConfirm();
     }
   },err=>{
-    lastGeoOk=false;updateStatusPills();
-    let msg='No se pudo obtener tu ubicación.';
-    if(err.code===1) msg='Permiso de ubicación denegado. Actívalo en la configuración de tu navegador/dispositivo e inténtalo de nuevo.';
-    else if(err.code===2) msg='Ubicación no disponible en este momento. Verifica tu GPS o conexión e inténtalo de nuevo.';
-    else if(err.code===3) msg='Se agotó el tiempo de espera al obtener tu ubicación. Inténtalo de nuevo.';
-    msg+=' Nota: la geolocalización requiere una conexión HTTPS (o abrir el archivo en localhost).';
-    resultBox.innerHTML=`<div class="verify-status vs-fail">❌ ${msg}</div>`;
-  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+    // Error GPS → permitir de todas formas, solo avisar
+    lastGeoOk=true;lastGeoLocationName='GPS no disponible';
+    if(gp){gp.className='spill spill-ok';gp.textContent='📍 Sin GPS';}
+    updateStatusPills();
+    if(faceConfirmed) showCheckinConfirm();
+    console.warn('GPS error:',err.message);
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
 }
 
 function checkIn(){ registerAttendance('in'); }
 function checkOut(){ registerAttendance('out'); }
 
 function registerAttendance(type){
-  if(!lastGeoOk){ showAlertOn('checkinAlert',`Primero verifica tu ubicación y asegúrate de estar dentro del rango de alguna ubicación autorizada para marcar tu ${type==='in'?'entrada':'salida'}`,'error'); return; }
-  if(!faceConfirmed){ showAlertOn('checkinAlert','Primero verifica tu rostro. Si no se reconoce tu rostro, no podrás marcar asistencia','error'); return; }
+  // faceConfirmed debe ser true — ya se verificó en el paso 1
+  // Permitir también si venimos del paso 2 (faceVerifiedForConfirm)
+  if(!faceConfirmed&&!window._faceVerifiedForConfirm){
+    showAlertOn('checkinAlert','Verifica tu rostro primero','error');
+    return;
+  }
 
   const data=getData();
   const now=new Date();
@@ -3520,8 +3543,8 @@ function applyRemoteData(remote){
   const local=getData();
   // Preservar credenciales: si el local ya las tiene, usarlas
   // Si no (dispositivo nuevo), heredar las de la nube
-  const supUrl=local.config.supabaseUrl||remote.config.supabaseUrl||SUPABASE_HARDCODED_URL;
-  const supKey=local.config.supabaseKey||remote.config.supabaseKey||SUPABASE_HARDCODED_KEY;
+  const supUrl=SUPABASE_HARDCODED_URL||local.config.supabaseUrl||remote.config.supabaseUrl;
+  const supKey=SUPABASE_HARDCODED_KEY||local.config.supabaseKey||remote.config.supabaseKey;
   remote.config.supabaseUrl=supUrl;
   remote.config.supabaseKey=supKey;
   if(local.config.waPhoneId) remote.config.waPhoneId=local.config.waPhoneId;
@@ -3757,22 +3780,27 @@ function importUsersExcel(event){
 
 /* ─── Mostrar pantalla de confirmación de asistencia ─── */
 function showCheckinConfirm(){
+  // Marcar que el rostro fue verificado — sobrevive a stopFace()
+  window._faceVerifiedForConfirm=true;
+
   const step1=document.getElementById('checkinStep1');
   const step2=document.getElementById('checkinStep2');
   if(step1) step1.style.display='none';
   if(step2) step2.style.display='block';
-  // Poner iniciales del usuario
+  // Avatar con iniciales
   const av=document.getElementById('checkinAvatar');
   const nm=document.getElementById('checkinUserName');
-  if(currentUser&&av){
+  if(currentUser&&av)
     av.textContent=currentUser.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-  }
   if(currentUser&&nm) nm.textContent=currentUser.name;
-  // Ocultar cámara para ahorrar batería
-  stopFace();
+  // Apagar cámara (ahorro de batería) PERO mantener faceConfirmed=true
+  if(faceStream){faceStream.getTracks().forEach(t=>t.stop());faceStream=null;}
+  const v=document.getElementById('faceVideo'); if(v){v.srcObject=null;}
+  const wrap=document.getElementById('checkinFaceWrap'); if(wrap) wrap.style.display='none';
 }
 
 function hideCheckinConfirm(){
+  window._faceVerifiedForConfirm=false;
   const step1=document.getElementById('checkinStep1');
   const step2=document.getElementById('checkinStep2');
   if(step1) step1.style.display='block';
@@ -3790,19 +3818,19 @@ setInterval(()=>{
 },30000);
 
 /* ---------- INIT ---------- */
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   initData();
   tickClock();
-  // Mostrar badge de "Conectando" inmediatamente
   setSyncStatus('sync','Conectando…');
-  // Mostrar estado en login
   const loginStatus=document.getElementById('loginSyncStatus');
-  if(loginStatus){
-    loginStatus.style.display='block';
-    loginStatus.innerHTML='🔄 Sincronizando datos con la nube…';
-  }
-  // Conectar a Supabase (espera el SDK automáticamente)
+  if(loginStatus){loginStatus.style.display='block';loginStatus.innerHTML='🔄 Conectando con la nube…';}
+  // Intentar conexión inmediata — sin esperar librerías externas
   cloudPullOnLoad();
+  // Segunda conexión a los 4 segundos por si la primera fue antes de que cargara la red
+  setTimeout(()=>{
+    const {url,key}=getSupabaseCredentials();
+    if(url&&key&&!_pollInterval) cloudPullOnLoad();
+  },4000);
 });
 
 
@@ -3821,7 +3849,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   },{passive:true});
 })();
 /* ─── UPPERCASE INPUT ENFORCEMENT ─── */
-const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp','cfgSupabaseUrl','cfgSupabaseKey','cfgWaPhoneId','cfgWaToken','cfgMsgProducto','cfgMsgFaltante','cfgMsgAdelanto','cfgMsgTardanza','cfgMsgFalta','cfgCloudKey','cfgCloudBin'];
+const SKIP_UPPERCASE=['loginUsername','loginPassword','fPassword','fWhatsapp','cfgSupabaseUrl','cfgSupabaseKey','cfgWaPhoneId','cfgWaToken','cfgMsgProducto','cfgMsgFaltante','cfgMsgAdelanto','cfgMsgTardanza','cfgMsgFalta','cfgCloudKey','cfgCloudBin','fUsername','fName','fDni','searchUsers','payrollAllSearch','incDesc','advAmount','discAmount','locName','zoneName'];
 const SKIP_UPPER_IDS=new Set(SKIP_UPPERCASE);
 document.addEventListener('input',function(e){
   const t=e.target;
